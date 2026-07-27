@@ -4,7 +4,7 @@ import { LAST } from "./preview.js";
 
 const $ = i => document.getElementById(i);
 
-/* ===== 6. print sheets ===== */
+/* print sheets */
 export function buildPrint(){
   const {pages,im,sig,pt,fam,nG}=LAST;
   let o="";

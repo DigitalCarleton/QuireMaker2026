@@ -9,7 +9,7 @@ import { buildPrint } from "./print.js";
 
 const $ = i => document.getElementById(i);
 
-/* ===== 7. wiring ===== */
+/* wiring  */
 function reload(){
   T.key=$("fmt").value; T.im=impose(T.key); T.step=0; T.back=false;
   buildScene(); drawFormes();

@@ -9,7 +9,7 @@ export function setPanelSize(w, h){
 
 const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
-/* Fallback pagination: estimate how many characters fit per panel from its
+/* Fallback pagination: this function estimates how many characters fit per panel from its
    physical size and the font size, then greedily fill. Used only if live
    measurement fails (panel reports no height). Never produces one-word pages. */
 export function splitPagesFallback(paras, per, pt){

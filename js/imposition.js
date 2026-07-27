@@ -1,6 +1,6 @@
 "use strict";
 
-/* ===== 1. formats & fold simulation ===== */
+/* formats & fold simulation  */
 export const FORMATS = {
   folio :{name:"Folio",       sym:"2&deg;", C:2,R:1, folds:[["V","LR"]]},
   quarto:{name:"Quarto",      sym:"4&deg;", C:2,R:2, folds:[["H","TB"],["V","LR"]]},

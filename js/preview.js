@@ -5,7 +5,7 @@ import { PW, PH, setPanelSize, splitPages } from "./pagination.js";
 
 const $ = i => document.getElementById(i);
 
-/* ===== 2. fold theatre — fixed centered stage =====
+/* fold theatre — fixed centered stage
    The stack of panels always stays centered. Panels have a fixed leaf
    size; each panel is placed relative to the stack CENTER, so as the
    sheet folds down the footprint shrinks toward the middle and never
@@ -94,7 +94,7 @@ export function layout(){
   $("fwd").disabled=T.step===n;
 }
 
-/* ===== 3. forme maps ===== */
+/*  forme maps  */
 export function drawFormes(){
   const im=T.im, sig=($("sig").value||"A").trim(), f=FORMATS[T.key];
   $("fx").innerHTML=`${f.sym}: ${sig}<sup>${im.leaves}</sup>`
@@ -119,7 +119,7 @@ export function drawFormes(){
   });
 }
 
-/* ===== 5. live on-screen preview ===== */
+/*  live on-screen preview  */
 export let LAST=null;   // {pages, im, sig, pt, fam, nG}
 
 export function compose(){
