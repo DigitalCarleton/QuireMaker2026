@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quire Maker</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Quire <span>Maker</span></h1>
+  <div class="tag">watch it fold &middot; see the pages &middot; print it</div>
+</header>
+
+<div class="cols">
+  <div class="panel">
+    <h2>Set the forme</h2>
+
+    <label for="fmt">Format</label>
+    <select id="fmt">
+      <option value="folio">Folio &mdash; 1 fold &middot; 4 pages</option>
+      <option value="quarto">Quarto &mdash; 2 folds &middot; 8 pages</option>
+      <option value="octavo" selected>Octavo &mdash; 3 folds &middot; 16 pages</option>
+      <option value="sexto">Sextodecimo &mdash; 4 folds &middot; 32 pages</option>
+    </select>
+
+    <div class="two">
+      <div><label for="sig">Signature</label><input type="text" id="sig" value="A" maxlength="2"></div>
+      <div><label for="fs">Size (pt)</label><input type="number" id="fs" value="9.2" step="0.2" min="5" max="16"></div>
+    </div>
+
+    <label for="face">Typeface</label>
+    <select id="face">
+      <option value='"Iowan Old Style",Georgia,serif'>Old style serif</option>
+      <option value='"Palatino Linotype",Palatino,serif'>Palatino</option>
+      <option value='"Times New Roman",Times,serif'>Times</option>
+      <option value='Baskerville,"Libre Baskerville",serif'>Baskerville</option>
+    </select>
+
+    <div class="chk"><input type="checkbox" id="fol" checked><span>Print folio marks</span></div>
+    <div class="chk"><input type="checkbox" id="para" checked><span>Keep paragraph breaks</span></div>
+
+    <label for="txt">Copy text</label>
+    <textarea id="txt"></textarea>
+    <div class="hint">Blank lines make paragraphs. Overflow starts a fresh gathering automatically.</div>
+
+    <div class="acts">
+      <button id="go">Impose &amp; preview</button>
+      <button class="ghost" id="pr">Print</button>
+    </div>
+  </div>
+
+  <div>
+    <div class="stagebox">
+      <p class="formula" id="fx"></p>
+      <div class="scene"><div class="stack" id="stack"></div></div>
+      <div class="transport">
+        <button class="ghost" id="back">&larr; Unfold</button>
+        <div class="step" id="stepTxt"></div>
+        <button class="ghost" id="fwd">Fold &rarr;</button>
+        <button class="ghost" id="turn">Turn over</button>
+      </div>
+    </div>
+
+    <div class="formes" id="formes"></div>
+    <p class="legend">
+      Numbers flagged <b style="color:var(--vermilion)">180&deg;</b> are set upside down on the sheet.
+      Click any page to spotlight it in both formes.
+      Print duplex, flipping on the <b>long edge</b>.
+    </p>
+
+    <div class="previewhead">
+      <h2>Finished pages</h2>
+      <div class="meta" id="pvMeta"></div>
+    </div>
+    <div class="book" id="book"><p class="emptynote">Press &ldquo;Impose &amp; preview&rdquo; to flow your text into the pages.</p></div>
+  </div>
+</div>
+</div>
+
+<div id="out"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
