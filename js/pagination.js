@@ -1,6 +1,6 @@
 "use strict";
 
-/* ===== 4. text flow ===== */
+/* ===== text flow / pagination ===== */
 export let PW=0, PH=0;
 
 export function setPanelSize(w, h){
@@ -8,116 +8,229 @@ export function setPanelSize(w, h){
 }
 
 const esc=s=>s.replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const MM=3.77953; // CSS px per mm at 96dpi
 
-/* Fallback pagination: this function estimates how many characters fit per panel from its
-   physical size and the font size, then greedily fill. Used only if live
-   measurement fails (panel reports no height). Never produces one-word pages. */
-export function splitPagesFallback(paras, per, pt){
-  const MM=3.77953, PT=1.33333;
-  const innerW=(PW-12)*MM, innerH=(PH-12-7)*MM;   // mm->px, minus padding + folio strip
-  const lineH=pt*PT*1.42;
-  const linesPerPage=Math.max(1, Math.floor(innerH/lineH));
-  const charW=pt*PT*0.5;                          // rough avg glyph advance
-  const charsPerLine=Math.max(8, Math.floor(innerW/charW));
-  const budget=linesPerPage*charsPerLine;         // chars per page
-  const render=a=>a.map((t,i)=>
-    `<p style="margin:0 0 .5em;text-indent:${i?"1.2em":"0"}">`+esc(t)+"</p>").join("");
-  const pages=[]; let cur=[]; let used=0;
-  const commit=()=>{ if(cur.length){ pages.push(cur.slice()); cur.length=0; used=0; } };
-  for(const p of paras){
-    const words=p.split(" "); let line="";
-    // approximate paragraph cost by characters; break when budget exceeded
-    for(const w of words){
-      const add=(line?1:0)+w.length;
-      if(used+add>budget && cur.length){ commit(); }
-      line=line?line+" "+w:w; used+=add;
-    }
-    if(line){ cur.push(line); }
-    // paragraph adds a break's worth of space
-    used+=charsPerLine*0.4;
-    if(used>=budget){ commit(); }
-  }
-  commit();
-  while(pages.length%per!==0)pages.push([]);
-  return pages.map(a=>render(a));
+/** Normalize input into an ordered word list (same rules as pagination). */
+export function wordsOf(text){
+  return String(text||"").replace(/\s+/g," ").trim().split(" ").filter(Boolean);
 }
 
-/* Paginate by filling a REAL print panel offscreen and using its own
-   overflow as the fit test. */
-export function splitPages(raw,keep,per,pt,fam,folioOn){
-  const paras=keep
-    ? raw.split(/\n\s*\n/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean)
-    : [raw.replace(/\s+/g," ").trim()].filter(Boolean);
-  if(!paras.length) return Array(per).fill("");
+/** Extract words from page HTML (strips tags). */
+export function wordsFromHtml(html){
+  if(!html || !String(html).trim()) return [];
+  const d=document.createElement("div");
+  d.innerHTML=html;
+  return wordsOf(d.textContent||"");
+}
 
-  // A real .pcell at true panel size, hidden but laid out for measurement.
+/**
+ * Strict check: concatenated words across all pages must equal input words
+ * in order. Logs the first divergence. Returns true on success.
+ */
+export function verifyWordIntegrity(raw, pageHtmls){
+  const expected=wordsOf(raw);
+  const actual=[];
+  for(const html of pageHtmls) actual.push(...wordsFromHtml(html));
+
+  const n=Math.max(expected.length, actual.length);
+  for(let i=0;i<n;i++){
+    if(expected[i]!==actual[i]){
+      console.error(
+        "[Quire Maker] Pagination word integrity FAILED at word index "+i+
+        ".\n  expected: "+JSON.stringify(expected[i]??"(end)")+
+        "\n  actual:   "+JSON.stringify(actual[i]??"(end)")+
+        "\n  expectedTotal="+expected.length+" actualTotal="+actual.length
+      );
+      return false;
+    }
+  }
+  return true;
+}
+
+function renderParas(a){
+  return a.map((t,i)=>
+    `<p style="margin:0 0 .5em;text-indent:${i?"1.2em":"0"}">`+esc(t)+"</p>"
+  ).join("");
+}
+
+function padToGatherings(pages, per){
+  const out=pages.slice();
+  while(out.length%per!==0) out.push("");
+  return out;
+}
+
+function charBudget(pt){
+  const innerW=Math.max(1,(PW-12)*MM), innerH=Math.max(1,(PH-12-7)*MM);
+  const PT=1.33333;
+  const lineH=pt*PT*1.42;
+  const linesPerPage=Math.max(1, Math.floor(innerH/lineH));
+  const charW=pt*PT*0.5;
+  const charsPerLine=Math.max(8, Math.floor(innerW/charW));
+  return {
+    budget: Math.max(charsPerLine, linesPerPage*charsPerLine),
+    charsPerLine,
+    lineH
+  };
+}
+
+/**
+ * Character-budget fallback. Splits word-by-word so a long paragraph never
+ * overfills a page. Used when live measurement is unavailable or fails.
+ * Never drops words.
+ */
+export function splitPagesFallback(paras, per, pt){
+  const {budget, charsPerLine}=charBudget(pt);
+
+  const pages=[];
+  let cur=[];
+  let frag="";
+  let used=0;
+
+  const flushFrag=()=>{
+    if(frag){ cur.push(frag); frag=""; }
+  };
+  const commit=()=>{
+    flushFrag();
+    if(cur.length){ pages.push(cur.slice()); cur.length=0; used=0; }
+  };
+
+  for(const p of paras){
+    const words=p.split(/\s+/).filter(Boolean);
+    for(const w of words){
+      const need=(frag?1:0)+w.length;
+      if(used+need>budget && (frag||cur.length)){
+        commit();
+      }
+      if(frag){ frag=frag+" "+w; used+=1+w.length; }
+      else    { frag=w;           used+=w.length; }
+      // Pathological: one word longer than the whole budget — still place it.
+      if(used>budget && cur.length===0 && !frag.includes(" ")){
+        commit();
+      }
+    }
+    flushFrag();
+    used+=charsPerLine*0.4;
+    if(used>=budget && cur.length) commit();
+  }
+  commit();
+
+  return padToGatherings(pages.map(a=>renderParas(a)), per);
+}
+
+/**
+ * Build an offscreen measure panel with an EXPLICIT text-box height.
+ * Flex shrink-wrapping makes clientHeight===scrollHeight, which would make
+ * every word look like an overflow. Explicit px height avoids that.
+ */
+function makeMeasurePanel(pt, fam, folioOn, lineH){
+  const cellW=PW*MM, cellH=PH*MM;
+  const pad=6*MM;                         // matches print padding: 6mm
+  const folioReserve=folioOn ? (7.5*1.3333 + 2*MM) : 0;  // folio strip + margin-top
+  const textPadBottom=1.5*MM;
+  // Usable text height: cell minus padding, folio, and a full-line safety margin.
+  const textH=Math.max(lineH*2, cellH - 2*pad - folioReserve - textPadBottom - lineH*1.15);
+
   const cell=document.createElement("div");
   cell.className="pcell measure";
   cell.style.cssText=
     `position:fixed;left:0;top:0;z-index:-1;opacity:0;pointer-events:none;`+
-    `width:${PW}mm;height:${PH}mm;box-sizing:border-box;padding:6mm;`+
-    `border:1px dashed #ccc;display:flex;flex-direction:column;overflow:hidden`;
+    `width:${cellW}px;height:${cellH}px;box-sizing:border-box;padding:${pad}px;`+
+    `border:1px dashed #ccc;overflow:hidden`;
+
   const txt=document.createElement("div");
-  txt.style.cssText=`flex:1;min-height:0;line-height:1.42;text-align:justify;`+
-    `hyphens:auto;overflow:hidden;padding-bottom:1.5mm;font-family:${fam};font-size:${pt}pt`;
-  const fol=document.createElement("div");
-  fol.style.cssText=`text-align:center;font-size:7.5pt;color:#555;margin-top:2mm;flex:0 0 auto`;
-  fol.textContent = folioOn ? "A1.1r \u00b7 000" : "";     // reserve realistic strip
+  txt.style.cssText=
+    `width:${Math.max(1, cellW-2*pad)}px;height:${textH}px;box-sizing:border-box;`+
+    `line-height:1.42;text-align:justify;hyphens:auto;overflow:hidden;`+
+    `font-family:${fam};font-size:${pt}pt`;
+
   cell.appendChild(txt);
-  if(folioOn) cell.appendChild(fol);
   document.body.appendChild(cell);
+  return {cell, txt, textH};
+}
 
-  const render=a=>a.map((t,i)=>
-    `<p style="margin:0 0 .5em;text-indent:${i?"1.2em":"0"}">`+esc(t)+"</p>").join("");
+/**
+ * Paginate by filling a real print panel offscreen and using overflow as
+ * the fit test. Produces as many pages as needed, then pads to a whole
+ * number of gatherings. Every input word must appear in order.
+ */
+export function splitPages(raw,keep,per,pt,fam,folioOn){
+  const paras=keep
+    ? raw.split(/\n\s*\n/).map(s=>s.replace(/\s+/g," ").trim()).filter(Boolean)
+    : [raw.replace(/\s+/g," ").trim()].filter(Boolean);
 
-  // Guard: if the panel didn't lay out (clientHeight ~ 0), fall back to a
-  // character-budget split so we never emit one-word pages.
-  txt.innerHTML = render(["measure"]);
-  const realHeight = txt.clientHeight;
-  if(realHeight < 20){
-    cell.remove();
-    return splitPagesFallback(paras, per, pt);
+  if(!paras.length){
+    const empty=Array(per).fill("");
+    verifyWordIntegrity(raw, empty);
+    return empty;
   }
 
-  const lineH = pt * 1.3333 * 1.42;                 // px per line
-  // Reserve a FULL line plus a small buffer. The preview leaf is scaled and the
-  // printer rounds mm differently, so a half-line margin still clipped. A full
-  // line of headroom guarantees the last line clears in every context.
-  const overflows=()=> txt.scrollHeight > (txt.clientHeight - lineH*1.15) + 0.5;
+  const expectedCount=wordsOf(paras.join(" ")).length;
+  const lineH=pt*1.3333*1.42;
+  const {cell, txt, textH}=makeMeasurePanel(pt, fam, folioOn, lineH);
+
+  // Guard: panel must have a real usable text box.
+  txt.innerHTML=renderParas(["measure"]);
+  if(textH < lineH*2 || txt.clientHeight < lineH){
+    cell.remove();
+    const fb=splitPagesFallback(paras, per, pt);
+    if(!verifyWordIntegrity(raw, fb)){
+      console.error("[Quire Maker] Fallback pagination failed word integrity.");
+    }
+    return fb;
+  }
+
+  const overflows=()=> txt.scrollHeight > txt.clientHeight + 0.5;
 
   const pages=[]; let cur=[];
   const commit=()=>{ if(cur.length){ pages.push(cur.slice()); cur.length=0; } };
 
   for(const p of paras){
     let carry="";
-    const words=p.split(" ");
+    const words=p.split(/\s+/).filter(Boolean);
     for(let i=0;i<words.length;i++){
-      const trial = carry ? carry+" "+words[i] : words[i];
-      txt.innerHTML = render(cur.concat(trial));
+      const trial=carry ? carry+" "+words[i] : words[i];
+      txt.innerHTML=renderParas(cur.concat(trial));
       if(!overflows()){ carry=trial; continue; }
-      // overflowed: the current page is full. Close it WITHOUT this word.
+      // Current page is full without this word.
       if(carry){ cur.push(carry); }
       else if(cur.length===0){
-        // single word too big for an empty page: force it, avoid infinite loop
+        // Single word too big for an empty page: force it to avoid a stall.
         cur.push(words[i]); commit(); carry=""; continue;
       }
       commit();
       carry=words[i];
-      // start fresh page with just this word; verify it fits alone
-      txt.innerHTML = render([carry]);
-      if(overflows()){ /* pathological: force it anyway */ cur.push(carry); commit(); carry=""; }
+      txt.innerHTML=renderParas([carry]);
+      if(overflows()){ cur.push(carry); commit(); carry=""; }
     }
     if(carry){ cur.push(carry); carry=""; }
   }
   commit();
   cell.remove();
-  // Sanity cap: real pages should never vastly outnumber what the text can fill.
-  // If they do, measurement misfired -> use the character-budget fallback instead.
-  const nonEmpty = pages.filter(p=>p.length).length;
-  const wordCount = paras.join(" ").split(/\s+/).filter(Boolean).length;
-  if(nonEmpty > 4 && nonEmpty > wordCount/3){
-    return splitPagesFallback(paras, per, pt);
+
+  let htmlPages=pages.map(a=>renderParas(a));
+
+  // If live measurement packed almost nothing per page, prefer the fallback.
+  const nonEmpty=htmlPages.filter(p=>p && p.trim()).length;
+  const avgWords=nonEmpty ? expectedCount/nonEmpty : 0;
+  if(nonEmpty>4 && avgWords < 3){
+    const fb=splitPagesFallback(paras, per, pt);
+    if(verifyWordIntegrity(raw, fb)){
+      htmlPages=fb;
+    }else{
+      console.error("[Quire Maker] Ignoring broken fallback; keeping measured pages.");
+    }
   }
-  while(pages.length%per!==0)pages.push([]);
-  return pages.map(a=>render(a));
+
+  htmlPages=padToGatherings(htmlPages, per);
+
+  if(!verifyWordIntegrity(raw, htmlPages)){
+    const fb=splitPagesFallback(paras, per, pt);
+    if(verifyWordIntegrity(raw, fb)){
+      console.error("[Quire Maker] Measured pages failed integrity; using fallback.");
+      return fb;
+    }
+    console.error("[Quire Maker] CRITICAL: pagination could not preserve all words.");
+  }
+
+  return htmlPages;
 }

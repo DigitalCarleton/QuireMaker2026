@@ -1,7 +1,7 @@
 "use strict";
 
 import { FORMATS } from "./imposition.js";
-import { PW, PH, setPanelSize, splitPages } from "./pagination.js";
+import { PW, PH, setPanelSize, splitPages, verifyWordIntegrity } from "./pagination.js";
 
 const $ = i => document.getElementById(i);
 
@@ -125,9 +125,21 @@ export let LAST=null;   // {pages, im, sig, pt, fam, nG}
 export function compose(){
   const im=T.im, pt=parseFloat($("fs").value)||9.2, fam=$("face").value;
   const sig=($("sig").value||"A").trim();
+  const raw=$("txt").value;
+  const per=im.leaves*2;
   setPanelSize(297/im.C, 210/im.R);
-  const pages=splitPages($("txt").value,$("para").checked,im.leaves*2,pt,fam,$("fol").checked);
-  LAST={pages, im, sig, pt, fam, nG:pages.length/(im.leaves*2)};
+  const pages=splitPages(raw,$("para").checked,per,pt,fam,$("fol").checked);
+
+  // Pages must form whole gatherings; pad only happens inside splitPages.
+  if(pages.length%per!==0){
+    console.error("[Quire Maker] Page count "+pages.length+" is not a multiple of gathering size "+per);
+  }
+  if(!verifyWordIntegrity(raw, pages)){
+    console.error("[Quire Maker] compose(): word integrity check failed.");
+  }
+
+  const nG=pages.length/per;
+  LAST={pages, im, sig, pt, fam, nG, raw};
   return LAST;
 }
 

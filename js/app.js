@@ -27,7 +27,16 @@ $("go").onclick=()=>{
   setTimeout(()=>$("go").textContent="Impose & preview",1400);
   $("book").scrollIntoView({behavior:"smooth",block:"nearest"});
 };
-$("pr").onclick=()=>{ if(!LAST) compose(); buildPrint(); window.print(); };
+$("pr").onclick=()=>{
+  // Always re-compose from the current textarea so Print never uses stale pages.
+  const data=compose();
+  renderPreview();
+  const info=buildPrint(data);
+  if(info.pages!==data.pages.length || info.nG!==data.nG){
+    console.error("[Quire Maker] Print page count mismatch with preview.", info, data.nG, data.pages.length);
+  }
+  window.print();
+};
 
 $("txt").value=
 `You will rejoice to hear that no disaster has accompanied the commencement of an enterprise which you have regarded with such evil forebodings. I arrived here yesterday, and my first task is to assure my dear sister of my welfare and increasing confidence in the success of my undertaking.
