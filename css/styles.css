@@ -107,6 +107,129 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
   border-bottom:1px dashed var(--rule);padding-bottom:6px;margin-top:6px}
 .emptynote{color:var(--dim);font-size:13px;font-style:italic}
 
+/* ---- hero + navigation ---- */
+.hero{margin:0 0 34px;max-width:820px}
+.lede{font-size:clamp(16px,2.2vw,20px);line-height:1.6;color:var(--paper);margin:0 0 22px}
+.lede em{color:var(--gold);font-style:italic}
+.navbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%}
+.btnlink{display:inline-block;text-decoration:none;
+  font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;
+  text-transform:uppercase;padding:12px 22px;border:1px solid var(--gold);
+  background:var(--gold);color:var(--ink);font-weight:600;transition:background .15s,color .15s}
+.btnlink.ghost{background:transparent;color:var(--gold)}
+.btnlink:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
+.btnlink:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
+
+/* About dropdown */
+.dropdown{position:relative;display:inline-block}
+/* transparent bridge so the menu doesn't vanish when crossing the gap */
+.dropdown::after{content:"";position:absolute;top:100%;left:0;right:0;height:12px}
+.dropmenu{position:absolute;top:calc(100% + 10px);left:50%;
+  transform:translateX(-50%) translateY(6px);min-width:210px;
+  background:var(--board);border:1px solid var(--rule);
+  box-shadow:0 14px 34px rgba(0,0,0,.45);
+  display:flex;flex-direction:column;z-index:50;
+  opacity:0;visibility:hidden;transition:opacity .16s ease,transform .16s ease}
+.dropdown:hover .dropmenu,.dropdown:focus-within .dropmenu{
+  opacity:1;visibility:visible;transform:translateX(-50%) translateY(0)}
+.dropmenu a{display:block;text-decoration:none;padding:12px 18px;text-align:left;
+  font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--paper);border-bottom:1px solid var(--rule);
+  transition:background .12s,color .12s}
+.dropmenu a:last-child{border-bottom:0}
+.dropmenu a:hover{background:var(--gold);color:var(--ink)}
+
+/* subtle top nav / back link on subpages */
+.topnav{display:flex;align-items:center;gap:18px;margin:-6px 0 30px;flex-wrap:wrap}
+.backlink{text-decoration:none;font-family:ui-monospace,Menlo,monospace;font-size:11px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.backlink:hover{color:var(--vermilion)}
+.topnav .sep{color:var(--rule)}
+
+/* ---- article / prose pages (guide, about) ---- */
+.article{max-width:820px}
+.article h2{font-size:clamp(22px,4vw,32px);font-weight:600;letter-spacing:-.01em;
+  color:var(--paper);margin:38px 0 12px;scroll-margin-top:24px}
+.article h2:first-child{margin-top:0}
+.article h2 span{color:var(--gold);font-style:italic}
+.article h3{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--gold);margin:26px 0 10px}
+.article p{margin:0 0 16px;line-height:1.65}
+.article a{color:var(--gold)}
+
+/* numbered step cards for the guide */
+.steps{list-style:none;counter-reset:step;padding:0;margin:0 0 20px}
+.steps li{counter-increment:step;position:relative;border:1px solid var(--rule);
+  background:rgba(255,255,255,.03);padding:16px 18px 16px 62px;margin-bottom:12px}
+.steps li::before{content:counter(step);position:absolute;left:16px;top:16px;
+  width:30px;height:30px;display:flex;align-items:center;justify-content:center;
+  font-family:ui-monospace,Menlo,monospace;font-size:14px;font-weight:600;
+  color:var(--ink);background:var(--gold)}
+.steps li b{color:var(--paper)}
+.steps li .k{font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--gold);
+  letter-spacing:.06em}
+
+/* format cheat-sheet grid */
+.fmtgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:6px 0 24px}
+.fmtcard{border:1px solid var(--rule);background:rgba(255,255,255,.03);padding:14px 16px}
+.fmtcard .big{font-size:28px;font-weight:600;color:var(--gold);line-height:1}
+.fmtcard .nm{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--dim);margin:8px 0 2px}
+.fmtcard .sub{font-size:13px;color:var(--paper)}
+
+/* course schedule (related courses page) */
+.term{margin:0 0 26px}
+.term .season{font-family:ui-monospace,Menlo,monospace;font-size:12px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--gold);margin:0 0 8px;
+  border-bottom:1px solid var(--rule);padding-bottom:6px}
+.courselist{list-style:none;padding:0;margin:0}
+.courselist li{display:flex;gap:16px;align-items:baseline;
+  border-bottom:1px dashed var(--rule);padding:11px 2px}
+.courselist li:last-child{border-bottom:0}
+.courselist .code{flex:0 0 auto;min-width:96px;font-family:ui-monospace,Menlo,monospace;
+  font-size:13px;letter-spacing:.05em;color:var(--gold);font-weight:600}
+.courselist .title{color:var(--paper)}
+
+/* resource cards */
+.reslist{list-style:none;padding:0;margin:0 0 24px}
+.reslist li{border:1px solid var(--rule);background:rgba(255,255,255,.03);
+  padding:15px 18px;margin-bottom:12px}
+.reslist li b{color:var(--paper);display:block;margin-bottom:3px}
+.reslist li span{font-size:14px;color:var(--dim)}
+
+/* callout / tip */
+.callout{border-left:3px solid var(--gold);background:rgba(201,162,39,.08);
+  padding:14px 18px;margin:0 0 22px;font-size:15px}
+.callout b{color:var(--gold)}
+
+/* ---- about: timeline + people ---- */
+.timeline{list-style:none;padding:0;margin:8px 0 26px;border-left:1px solid var(--rule)}
+.timeline li{position:relative;padding:0 0 22px 26px}
+.timeline li::before{content:"";position:absolute;left:-6px;top:5px;width:11px;height:11px;
+  background:var(--gold);border-radius:50%;box-shadow:0 0 0 3px var(--board)}
+.timeline .yr{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;
+  color:var(--gold);display:block;margin-bottom:3px}
+
+.people{margin:10px 0 30px}
+.lead-card{display:flex;gap:22px;align-items:center;border:1px solid var(--rule);
+  background:rgba(255,255,255,.03);padding:20px;margin-bottom:22px;flex-wrap:wrap}
+.photo{background:repeating-linear-gradient(45deg,#2a271f,#2a271f 10px,#312d24 10px,#312d24 20px);
+  border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;
+  color:var(--dim);font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;text-align:center;flex:0 0 auto}
+.photo.lead{width:150px;height:180px}
+.photo.group{width:100%;height:260px;margin-top:12px}
+.lead-card .who{flex:1;min-width:200px}
+.lead-card .who .role{font-family:ui-monospace,Menlo,monospace;font-size:11px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 6px}
+.lead-card .who .nm{font-size:22px;font-weight:600;margin:0 0 8px}
+.memberlist{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0 0;padding:0;list-style:none}
+.memberlist li{border:1px solid var(--rule);background:rgba(255,255,255,.03);
+  padding:9px 14px;font-size:14px}
+
+footer.credit{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px;
+  font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.1em;color:var(--dim)}
+
 /* ---- print ---- */
 #out{display:none}
 @media print{
