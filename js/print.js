@@ -1,7 +1,7 @@
 "use strict";
 
 import { LAST, panelOpts } from "./preview.js";
-import { panelStyles, wordsFromHtml } from "./pagination.js";
+import { PW, PH, panelStyles, wordsFromHtml } from "./pagination.js";
 
 const $ = i => document.getElementById(i);
 const escHtml = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -26,19 +26,13 @@ export function buildPrint(data){
     );
   }
 
-  // The physical sheet cell for this format. Folio/octavo are portrait cells;
-  // quarto/sextodecimo are landscape cells, so the portrait page inside them is
-  // rotated 90 deg to fit. The whole booklet then reads portrait after folding.
-  const sheetCW=297/im.C, sheetCH=210/im.R;
-  const fmtRot=(sheetCW>sheetCH+1e-6)?90:0;
-
   let o_html="";
   let sheetCount=0;
   for(let g=0;g<nG;g++){
     const base=g*per;
     for(const side of [im.outer,im.inner]){
       sheetCount++;
-      o_html+=`<div class="psheet" style="grid-template-columns:repeat(${im.C},1fr);grid-template-rows:repeat(${im.R},1fr)">`;
+      o_html+=`<div class="psheet" style="grid-template-columns:repeat(${im.C},${PW}mm);grid-template-rows:repeat(${im.R},${PH}mm)">`;
       for(const row of side)for(const cl of row){
         const abs=base+cl.page;
         const leaf=Math.ceil(cl.page/2);
@@ -57,15 +51,11 @@ export function buildPrint(data){
             + `<span>${o.pgOn?abs:""}</span></div>`
           : ``;
 
-        // page flip (180) from imposition + format rotation (0 or 90),
-        // portrait page content centered inside the physical sheet cell
-        const deg=(cl.rot?180:0)+fmtRot;
-        o_html+=`<div class="pcell">`+
-          `<div class="pcontent" style="${S.cell};position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(${deg}deg)">`+
-            `<div class="ptext" style="${S.text}">${pages[abs-1]||""}</div>`+
-            catchEl+
-            foot+
-          `</div>`+
+        // pages that sit upside-down on the sheet carry the .rot (180deg) class
+        o_html+=`<div class="pcell${cl.rot?" rot":""}" style="${S.cell}">`+
+          `<div class="ptext" style="${S.text}">${pages[abs-1]||""}</div>`+
+          catchEl+
+          foot+
           `</div>`;
       }
       o_html+=`</div>`;

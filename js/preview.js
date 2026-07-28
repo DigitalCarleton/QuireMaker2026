@@ -139,10 +139,7 @@ export function compose(){
   const raw=$("txt").value;
   const per=im.leaves*2;
   const o=panelOpts();
-  // Every finished page is shown/paginated PORTRAIT (short side = width),
-  // so folio, quarto, octavo, and sextodecimo all share one page shape.
-  const cw=297/im.C, ch=210/im.R;
-  setPanelSize(Math.min(cw,ch), Math.max(cw,ch));
+  setPanelSize(297/im.C, 210/im.R);
   const pages=splitPages(raw,$("para").checked,per,pt,fam,{folioMarks:o.folioMarks,catchwords:o.catchwords});
 
   // Pages must form whole gatherings; pad only happens inside splitPages.

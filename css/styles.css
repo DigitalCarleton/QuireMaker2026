@@ -270,10 +270,9 @@ footer.credit{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px;
   .psheet{page-break-after:always;break-after:page;display:grid;
     width:297mm;height:210mm;overflow:hidden}
   /* Geometry is set inline by panelStyles() — keep CSS from fighting those sizes */
-  /* .pcell = the physical sheet cell; the portrait page (.pcontent) sits inside it */
-  .pcell{position:relative;overflow:hidden;background:#fff;color:#2a2620;border:0;
+  .pcell{background:#fff;color:#2a2620;border:0;
     box-shadow:inset 0 0 0 1px #ccc}
-  .pcontent{background:#fff}
+  .pcell.rot{transform:rotate(180deg)}
   .ptext{min-height:0;text-align:justify}
   .ptext p{margin:0 0 .5em}
   .pcatch{min-height:0}
