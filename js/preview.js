@@ -1,7 +1,7 @@
 "use strict";
 
 import { FORMATS } from "./imposition.js";
-import { PW, PH, setPanelSize, splitPages, verifyWordIntegrity } from "./pagination.js";
+import { PW, PH, setPanelSize, splitPages, verifyWordIntegrity, panelStyles } from "./pagination.js";
 
 const $ = i => document.getElementById(i);
 
@@ -153,9 +153,9 @@ export function renderPreview(){
     + (blanks?` \u00b7 ${blanks} blank (text ran short of a full gathering)`:``)
     + ` \u00b7 reads 1 \u2192 ${pages.length}`;
 
-  // true panel size in mm; render at real size then scale to fit the grid cell
-  const MM=3.77953;
-  const panelWpx=PW*MM, panelHpx=PH*MM;
+  // Identical panel geometry to measure + print (panelStyles).
+  const folioOn=$("fol").checked;
+  const S=panelStyles(pt, fam, folioOn);
 
   let html="";
   for(let g=0;g<nG;g++){
@@ -166,16 +166,14 @@ export function renderPreview(){
       const leaf=Math.ceil((p+1)/2);
       const side=(p%2===0)?"r":"v";
       const blank = !body.trim();
-      const foot = $("fol").checked
-        ? `<div class="foot"><span class="corner">${sig}${g+1}.${leaf}${side}</span><span class="pnum">${n}</span></div>`
-        : `<div class="foot"><span class="corner"></span><span class="pnum">${n}</span></div>`;
-      // Leaf frame is sized in mm exactly like the measure/print panel, so the
-      // text that was measured to fit really fits here too (no hidden overflow).
+      const foot = folioOn
+        ? `<div class="foot" style="${S.folio};justify-content:space-between">`+
+          `<span class="corner">${sig}${g+1}.${leaf}${side}</span>`+
+          `<span class="pnum">${n}</span></div>`
+        : ``;
       html+=`<div class="leaf${blank?" blank":""}">`
-          + `<div class="leafframe" `
-          +      `style="width:${PW}mm;height:${PH}mm;padding:6mm;`
-          +      `font-family:${fam};font-size:${pt}pt;line-height:1.42">`
-          + `<div class="body" style="padding-bottom:1.5mm">${body}</div>`
+          + `<div class="leafframe" style="${S.cell}">`
+          + `<div class="body" style="${S.text}">${body}</div>`
           + foot
           + `</div></div>`;
     }
