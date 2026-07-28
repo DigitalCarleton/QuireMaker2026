@@ -1,9 +1,20 @@
 "use strict";
 
 import { FORMATS } from "./imposition.js";
-import { PW, PH, setPanelSize, splitPages, verifyWordIntegrity, panelStyles } from "./pagination.js";
+import { PW, PH, setPanelSize, splitPages, verifyWordIntegrity, panelStyles, wordsFromHtml } from "./pagination.js";
 
 const $ = i => document.getElementById(i);
+const escHtml = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+/* Read the page-furniture toggles into one options object. */
+export function panelOpts(){
+  const pgOn  = $("pgnum")   ? $("pgnum").checked   : true;
+  const sigOn = $("sigmark") ? $("sigmark").checked : true;
+  const catchOn = $("catch") ? $("catch").checked   : false;
+  return {pgOn, sigOn, catchOn, folioMarks: pgOn||sigOn, catchwords: catchOn};
+}
+/* First word of a page (for the catchword on the previous page). */
+function firstWordOf(html){ return wordsFromHtml(html)[0] || ""; }
 
 /* fold theatre — fixed centered stage
    The stack of panels always stays centered. Panels have a fixed leaf
@@ -127,8 +138,12 @@ export function compose(){
   const sig=($("sig").value||"A").trim();
   const raw=$("txt").value;
   const per=im.leaves*2;
-  setPanelSize(297/im.C, 210/im.R);
-  const pages=splitPages(raw,$("para").checked,per,pt,fam,$("fol").checked);
+  const o=panelOpts();
+  // Every finished page is shown/paginated PORTRAIT (short side = width),
+  // so folio, quarto, octavo, and sextodecimo all share one page shape.
+  const cw=297/im.C, ch=210/im.R;
+  setPanelSize(Math.min(cw,ch), Math.max(cw,ch));
+  const pages=splitPages(raw,$("para").checked,per,pt,fam,{folioMarks:o.folioMarks,catchwords:o.catchwords});
 
   // Pages must form whole gatherings; pad only happens inside splitPages.
   if(pages.length%per!==0){
@@ -139,7 +154,7 @@ export function compose(){
   }
 
   const nG=pages.length/per;
-  LAST={pages, im, sig, pt, fam, nG, raw};
+  LAST={pages, im, sig, pt, fam, nG, raw, opts:o};
   return LAST;
 }
 
@@ -154,8 +169,8 @@ export function renderPreview(){
     + ` \u00b7 reads 1 \u2192 ${pages.length}`;
 
   // Identical panel geometry to measure + print (panelStyles).
-  const folioOn=$("fol").checked;
-  const S=panelStyles(pt, fam, folioOn);
+  const o=panelOpts();
+  const S=panelStyles(pt, fam, {folioMarks:o.folioMarks, catchwords:o.catchwords});
 
   let html="";
   for(let g=0;g<nG;g++){
@@ -166,14 +181,24 @@ export function renderPreview(){
       const leaf=Math.ceil((p+1)/2);
       const side=(p%2===0)?"r":"v";
       const blank = !body.trim();
-      const foot = folioOn
-        ? `<div class="foot" style="${S.folio};justify-content:space-between">`+
-          `<span class="corner">${sig}${g+1}.${leaf}${side}</span>`+
-          `<span class="pnum">${n}</span></div>`
+
+      // catchword = first word of the NEXT page, in brackets, bottom-right
+      const cwWord = o.catchOn ? firstWordOf(pages[n]) : "";
+      const catchEl = o.catchOn
+        ? `<div class="catch" style="${S.catch}">${cwWord?("["+escHtml(cwWord)+"]"):""}</div>`
         : ``;
+
+      // folio strip: signature (left) + page number (right), independent toggles
+      const foot = o.folioMarks
+        ? `<div class="foot" style="${S.folio}">`
+          + `<span class="corner">${o.sigOn?`${sig}${g+1}.${leaf}${side}`:""}</span>`
+          + `<span class="pnum">${o.pgOn?n:""}</span></div>`
+        : ``;
+
       html+=`<div class="leaf${blank?" blank":""}">`
           + `<div class="leafframe" style="${S.cell}">`
           + `<div class="body" style="${S.text}">${body}</div>`
+          + catchEl
           + foot
           + `</div></div>`;
     }

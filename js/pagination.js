@@ -44,26 +44,41 @@ function padToGatherings(pages,per){
   return out;
 }
 
-/* Single source of truth for panel geometry (px). */
-export function panelMetrics(pt,folioOn){
+/* Normalize the panel options. Accepts a legacy boolean (folio marks on/off)
+   or an object {folioMarks, catchwords}. */
+function normOpts(o){
+  if(o===true||o===false||o==null) return {folioMarks:!!o, catchwords:false};
+  return {folioMarks:!!o.folioMarks, catchwords:!!o.catchwords};
+}
+
+/* Single source of truth for panel geometry (px).
+   Bottom of the panel, below the text area, can carry two fixed strips:
+     - a catchword strip (body size, right aligned)   [catchH]
+     - a folio strip (signature + page number, 7.5pt) [folioH]
+   Both live OUTSIDE the text area so they never overlap the copy. */
+export function panelMetrics(pt,opts){
+  const {folioMarks,catchwords}=normOpts(opts);
   const lineH=Math.max(8, pt*1.3333*1.42);
   const pad=6*MM;
   const pw=(PW>1)?PW:74.25, ph=(PH>1)?PH:105;
   const cellW=pw*MM, cellH=ph*MM;
   const innerW=Math.max(lineH*6, cellW-2*pad);
   const innerH=Math.max(lineH*8, cellH-2*pad);
-  const folioH=folioOn ? (2*MM + 7.5*1.3333*1.2) : 0;
-  let textAreaH=innerH-folioH;
+  const folioLineH=7.5*1.3333*1.2;
+  const folioH=folioMarks ? (2*MM + folioLineH) : 0;
+  const catchH=catchwords ? (1.5*MM + lineH) : 0;   // catchword uses body line height
+  let textAreaH=innerH-folioH-catchH;
   if(!(textAreaH>=lineH*3)) textAreaH=Math.max(lineH*12, innerH*0.9, 180);
   const headroom=lineH;                        // reserve exactly one line
   const fitH=Math.max(lineH*2, textAreaH-headroom);
-  return {lineH,pad,folioH,cellW,cellH,innerW,innerH,textAreaH,headroom,fitH,pw,ph,MM};
+  return {lineH,pad,folioH,catchH,folioLineH,cellW,cellH,innerW,innerH,
+          textAreaH,headroom,fitH,folioMarks,catchwords,pw,ph,MM};
 }
 
 function cssFontFamily(fam){ return String(fam||'Georgia,serif').replace(/"/g,"'"); }
 
-export function panelStyles(pt,fam,folioOn){
-  const m=panelMetrics(pt,folioOn);
+export function panelStyles(pt,fam,opts){
+  const m=panelMetrics(pt,opts);
   const font=`font-family:${cssFontFamily(fam)};font-size:${pt}pt;line-height:1.42`;
   return {
     m,
@@ -72,9 +87,15 @@ export function panelStyles(pt,fam,folioOn){
     text:`width:${m.innerW}px;height:${m.textAreaH}px;flex:0 0 ${m.textAreaH}px;`+
       `max-height:${m.textAreaH}px;box-sizing:border-box;overflow:hidden;`+
       `text-align:justify;hyphens:none;-webkit-hyphens:none;${font}`,
+    /* catchword strip: sits just under the text, aligned to the right edge */
+    catch:`width:${m.innerW}px;height:${m.catchH}px;flex:0 0 ${m.catchH}px;`+
+      `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
+      `display:flex;align-items:flex-end;justify-content:flex-end;`+
+      `color:#2a2620;${font}`,
+    /* folio strip: signature (left) and page number (right) */
     folio:`width:${m.innerW}px;height:${m.folioH}px;flex:0 0 ${m.folioH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
-      `display:flex;align-items:flex-end;justify-content:center;`+
+      `display:flex;align-items:flex-end;justify-content:space-between;`+
       `font-size:7.5pt;line-height:1.2;color:#555`
   };
 }
@@ -100,8 +121,8 @@ function wrapLines(words,cpl){
   return lines;
 }
 
-export function splitPagesFallback(paras,per,pt,folioOn){
-  return splitPages(paras.join('\n\n'), true, per, pt, 'Georgia,serif', folioOn);
+export function splitPagesFallback(paras,per,pt,opts){
+  return splitPages(paras.join('\n\n'), true, per, pt, 'Georgia,serif', opts);
 }
 
 /*
@@ -109,7 +130,7 @@ export function splitPagesFallback(paras,per,pt,folioOn){
  * chars-per-line from canvas, then fills each page to capacity.
  * Never one word per page; never drops a word.
  */
-export function splitPages(raw,keep,per,pt,fam,folioOn){
+export function splitPages(raw,keep,per,pt,fam,opts){
   const paras=keep
     ? String(raw).split(/\n\s*\n/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean)
     : [String(raw).replace(/\s+/g,' ').trim()].filter(Boolean);
@@ -117,7 +138,7 @@ export function splitPages(raw,keep,per,pt,fam,folioOn){
     const empty=Array(per).fill(''); verifyWordIntegrity(raw,empty); return empty;
   }
 
-  const m=panelMetrics(pt,!!folioOn);
+  const m=panelMetrics(pt,opts);
   const maxLines=Math.max(3, Math.floor(m.fitH/m.lineH));   // never < 3 lines
   const cpl=charsPerLine(pt,fam,m.innerW);
 

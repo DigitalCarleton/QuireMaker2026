@@ -17,6 +17,12 @@ function reload(){
 }
 $("fmt").onchange=reload;
 $("sig").oninput=()=>{ drawFormes(); if(LAST){compose();renderPreview();} };
+
+// Live update when any page-furniture / type option changes.
+["pgnum","sigmark","catch","para","face","fs"].forEach(id=>{
+  const el=$(id);
+  if(el) el.addEventListener("change",()=>{ if(LAST){ compose(); renderPreview(); } });
+});
 $("fwd").onclick=()=>{ if(T.step<T.im.folds.length){T.step++;layout();} };
 $("back").onclick=()=>{ if(T.step>0){T.step--;layout();} };
 $("turn").onclick=()=>{ T.back=!T.back; applyStackTransform(); };
