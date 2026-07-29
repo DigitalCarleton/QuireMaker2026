@@ -277,7 +277,7 @@ footer.credit{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px;
 
 /* ---- centered layout for prose / about pages ---- */
 .article{max-width:860px;margin:0 auto}
-.article .lede{text-align:center}
+.article .lede{text-align:left}
 .article h2{text-align:center}
 .steps{max-width:680px;margin:0 auto 20px}
 .fmtgrid{max-width:720px;margin:6px auto 24px}
