@@ -229,8 +229,7 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
 .people{margin:10px 0 30px}
 .lead-card{display:flex;gap:22px;align-items:center;border:1px solid var(--rule);
   background:rgba(255,255,255,.03);padding:20px;margin-bottom:22px;flex-wrap:wrap}
-.photo{background:repeating-linear-gradient(45deg,#2a271f,#2a271f 10px,#312d24 10px,#312d24 20px);
-  border:1px dashed var(--rule);display:flex;align-items:center;justify-content:center;
+.photo{background:(45deg);
   color:var(--dim);font-family:ui-monospace,Menlo,monospace;font-size:10px;letter-spacing:.12em;
   text-transform:uppercase;text-align:center;flex:0 0 auto}
 .photo.lead{width:150px;height:180px}
