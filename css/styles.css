@@ -121,9 +121,13 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
 .emptynote{color:var(--dim);font-size:13px}
 
 /* ---- hero + navigation ---- */
-.hero{margin:0 0 34px;max-width:820px;text-align:left}
-.lede{font-size:clamp(16px,2.2vw,20px);line-height:1.6;color:var(--paper);margin:0 0 22px}
+.hero{display:grid;grid-template-columns:1fr minmax(160px,280px);gap:28px;
+  align-items:center;margin:0 0 34px;max-width:none;text-align:left}
+.lede{font-size:clamp(16px,2.2vw,20px);line-height:1.6;color:var(--paper);margin:0}
 .lede em{color:var(--gold);font-style:normal}
+.hero-img{width:100%;height:auto;display:block;object-fit:cover;
+  border:1px solid var(--rule);box-shadow:0 2px 10px rgba(0,0,0,.35)}
+@media(max-width:700px){.hero{grid-template-columns:1fr}.hero-img{max-width:320px}}
 .article em{color:var(--gold);font-style:normal}
 .navbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%}
 .btnlink{display:inline-block;text-decoration:none;
