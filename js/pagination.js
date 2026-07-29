@@ -47,8 +47,8 @@ function padToGatherings(pages,per){
 /* Normalize the panel options. Accepts a legacy boolean (folio marks on/off)
    or an object {folioMarks, catchwords}. */
 function normOpts(o){
-  if(o===true||o===false||o==null) return {folioMarks:!!o, catchwords:false};
-  return {folioMarks:!!o.folioMarks, catchwords:!!o.catchwords};
+  if(o===true||o===false||o==null) return {folioMarks:!!o, catchwords:false, runningTitle:false};
+  return {folioMarks:!!o.folioMarks, catchwords:!!o.catchwords, runningTitle:!!o.runningTitle};
 }
 
 /* Single source of truth for panel geometry (px).
@@ -57,7 +57,7 @@ function normOpts(o){
      - a folio strip (signature + page number, 7.5pt) [folioH]
    Both live OUTSIDE the text area so they never overlap the copy. */
 export function panelMetrics(pt,opts){
-  const {folioMarks,catchwords}=normOpts(opts);
+  const {folioMarks,catchwords,runningTitle}=normOpts(opts);
   const lineH=Math.max(8, pt*1.3333*1.42);
   const pad=6*MM;
   const pw=(PW>1)?PW:74.25, ph=(PH>1)?PH:105;
@@ -67,12 +67,14 @@ export function panelMetrics(pt,opts){
   const folioLineH=7.5*1.3333*1.2;
   const folioH=folioMarks ? (2*MM + folioLineH) : 0;
   const catchH=catchwords ? (1.5*MM + lineH) : 0;   // catchword uses body line height
-  let textAreaH=innerH-folioH-catchH;
+  const runLineH=pt*1.3333*1.2;                     // running-head line
+  const runH=runningTitle ? (2*MM + runLineH) : 0;  // reserved on every page (blank on p.1)
+  let textAreaH=innerH-folioH-catchH-runH;
   if(!(textAreaH>=lineH*3)) textAreaH=Math.max(lineH*12, innerH*0.9, 180);
   const headroom=lineH;                        // reserve exactly one line
   const fitH=Math.max(lineH*2, textAreaH-headroom);
-  return {lineH,pad,folioH,catchH,folioLineH,cellW,cellH,innerW,innerH,
-          textAreaH,headroom,fitH,folioMarks,catchwords,pw,ph,MM};
+  return {lineH,pad,folioH,catchH,folioLineH,runH,runLineH,cellW,cellH,innerW,innerH,
+          textAreaH,headroom,fitH,folioMarks,catchwords,runningTitle,pw,ph,MM};
 }
 
 function cssFontFamily(fam){ return String(fam||'Georgia,serif').replace(/"/g,"'"); }
@@ -84,6 +86,12 @@ export function panelStyles(pt,fam,opts){
     m,
     cell:`width:${m.cellW}px;height:${m.cellH}px;padding:${m.pad}px;box-sizing:border-box;`+
       `display:flex;flex-direction:column;overflow:hidden;${font}`,
+    /* running-title strip: sits at the very top, centred italic */
+    run:`width:${m.innerW}px;height:${m.runH}px;flex:0 0 ${m.runH}px;`+
+      `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
+      `display:flex;align-items:flex-start;justify-content:center;`+
+      `font-style:italic;font-size:${pt}pt;line-height:1.2;color:#2a2620;`+
+      `font-family:${cssFontFamily(fam)}`,
     text:`width:${m.innerW}px;height:${m.textAreaH}px;flex:0 0 ${m.textAreaH}px;`+
       `max-height:${m.textAreaH}px;box-sizing:border-box;overflow:hidden;`+
       `text-align:justify;hyphens:none;-webkit-hyphens:none;${font}`,
