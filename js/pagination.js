@@ -35,8 +35,18 @@ export function verifyWordIntegrity(raw,pageHtmls){
   return true;
 }
 
-function renderParas(a){
-  return a.map((t,i)=>`<p style="margin:0 0 .5em;text-indent:${i?'1.2em':'0'}">`+esc(t)+'</p>').join('');
+function renderParas(a, keep){
+  // Continuous copy (breaks off): one flush block, no fake paragraph spacing.
+  if(!keep){
+    return `<p style="margin:0;text-indent:0">`+esc(a.join(' '))+'</p>';
+  }
+  // Breaks on: indent each new para; margin only BETWEEN paras (not after the last),
+  // so the bottom of the page isn't eaten by an unbudgeted .5em gap.
+  return a.map((t,i)=>{
+    const margin = i < a.length-1 ? '0 0 .5em' : '0';
+    const indent = i ? '1.2em' : '0';
+    return `<p style="margin:${margin};text-indent:${indent}">`+esc(t)+'</p>';
+  }).join('');
 }
 function padToGatherings(pages,per){
   const out=pages.slice();
@@ -156,10 +166,14 @@ export function splitPages(raw,keep,per,pt,fam,opts){
   for(const para of paras){
     const words=para.split(/\s+/).filter(Boolean);
     let start=0;
+    // True once any of THIS logical paragraph has been placed on the current page.
+    // Prevents leftover room from spawning a fake indented "new paragraph".
+    let onPage=false;
     while(start<words.length){
-      const gap=curParas.length?1:0;                       // blank line between paras
+      // Charge a gap only when a NEW logical paragraph begins on a page that already has copy.
+      const gap=(curParas.length && !onPage)?1:0;
       const room=Math.max(0, maxLines-curLines-gap);
-      if(room<=0){ commit(); continue; }
+      if(room<=0){ commit(); onPage=false; continue; }
       let end=start, taken=[];
       while(end<words.length){
         const trial=taken.concat(words[end]);
@@ -167,18 +181,25 @@ export function splitPages(raw,keep,per,pt,fam,opts){
         taken=trial; end++;
       }
       if(taken.length===0){
-        if(curParas.length){ commit(); continue; }         // no room, new page
-        taken=[words[start]]; end=start+1;                 // force one word on empty page
+        if(curParas.length){ commit(); onPage=false; continue; }  // no room, new page
+        taken=[words[start]]; end=start+1;                      // force one word on empty page
       }
-      curParas.push(taken.join(' '));
-      curLines+=wrapLines(taken,cpl)+gap;
+      if(onPage){
+        // Same paragraph, same page: append — do not start a new <p>.
+        curParas[curParas.length-1]+=' '+taken.join(' ');
+        curLines+=wrapLines(taken,cpl);
+      }else{
+        curParas.push(taken.join(' '));
+        curLines+=wrapLines(taken,cpl)+gap;
+        onPage=true;
+      }
       start=end;
-      if(curLines>=maxLines) commit();
+      if(curLines>=maxLines){ commit(); onPage=false; }
     }
   }
   commit();
 
-  let html=pages.map(a=>renderParas(a));
+  let html=pages.map(a=>renderParas(a, keep));
   html=padToGatherings(html,per);
   if(!verifyWordIntegrity(raw,html))
     console.error('[Quire Maker] CRITICAL: pagination lost words.');
