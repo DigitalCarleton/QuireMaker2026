@@ -19,10 +19,12 @@ $("fmt").onchange=reload;
 $("sig").oninput=()=>{ drawFormes(); if(LAST){compose();renderPreview();} };
 
 // Live update when any page-furniture / type option changes.
-["pgnum","sigmark","catch","para","face","fs"].forEach(id=>{
+["pgnum","sigmark","catch","para","face","fs","runtitle","restartpg"].forEach(id=>{
   const el=$(id);
   if(el) el.addEventListener("change",()=>{ if(LAST){ compose(); renderPreview(); } });
 });
+// Typing a running title updates the preview live.
+if($("runtitletext")) $("runtitletext").addEventListener("input",()=>{ if(LAST){ compose(); renderPreview(); } });
 $("fwd").onclick=()=>{ if(T.step<T.im.folds.length){T.step++;layout();} };
 $("back").onclick=()=>{ if(T.step>0){T.step--;layout();} };
 $("turn").onclick=()=>{ T.back=!T.back; applyStackTransform(); };
@@ -60,6 +62,18 @@ These are my enticements, and they are sufficient to conquer all fear of danger 
 These reflections have dispelled the agitation with which I began my letter, and I feel my heart glow with an enthusiasm which elevates me to heaven, for nothing contributes so much to tranquillise the mind as a steady purpose, a point on which the soul may fix its intellectual eye. This expedition has been the favourite dream of my early years. I have read with ardour the accounts of the various voyages which have been made in prospect of arriving at the North Pacific Ocean through the seas which surround the pole.
 
 You may remember that a history of all the voyages made for purposes of discovery composed the whole of our good uncle Thomas's library. My education was neglected, yet I was passionately fond of reading. These volumes were my study day and night, and my familiarity with them increased that regret which I had felt, as a child, on learning that my father's dying injunction had forbidden my uncle to allow me to embark in a seafaring life.`;
+
+// The passage above is only a sample: show it greyed, and wipe it the first time
+// a student clicks into the box so they can drop in their own text.
+$("txt").classList.add("is-sample");
+$("txt").addEventListener("focus",()=>{
+  const t=$("txt");
+  if(t.classList.contains("is-sample")){
+    t.classList.remove("is-sample");
+    t.value="";
+    if(LAST){ compose(); renderPreview(); }
+  }
+},{once:true});
 
 reload();
 compose(); renderPreview();   // show pages on first load

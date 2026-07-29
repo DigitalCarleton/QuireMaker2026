@@ -17,7 +17,7 @@ export function buildPrint(data){
   const {pages,im,sig,pt,fam,nG}=src;
   const per=im.leaves*2;
   const o=(src.opts)||panelOpts();
-  const S=panelStyles(pt, fam, {folioMarks:o.folioMarks, catchwords:o.catchwords});
+  const S=panelStyles(pt, fam, {folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle});
 
   if(pages.length!==nG*per){
     console.error(
@@ -45,14 +45,24 @@ export function buildPrint(data){
           : ``;
 
         // folio strip: signature (left) + page number (right), independent toggles
+        // empty (left) | signature (centred) | page number (right), all one line
+        // page number restarts at 1 per gathering when the option is on
+        const shownNum = o.restartNum ? cl.page : abs;
         const foot = o.folioMarks
           ? `<div class="pfol" style="${S.folio}">`
+            + `<span></span>`
             + `<span>${o.sigOn?`${sig}${g+1}.${leaf}${rv}`:""}</span>`
-            + `<span>${o.pgOn?abs:""}</span></div>`
+            + `<span>${o.pgOn?shownNum:""}</span></div>`
+          : ``;
+
+        // running title: reserved on every page, printed only from page 2 on non-blank pages
+        const runEl = o.runningTitle
+          ? `<div class="prun" style="${S.run}">${(abs>=2 && (pages[abs-1]||"").trim())?escHtml(o.runText):""}</div>`
           : ``;
 
         // pages that sit upside-down on the sheet carry the .rot (180deg) class
         o_html+=`<div class="pcell${cl.rot?" rot":""}" style="${S.cell}">`+
+          runEl+
           `<div class="ptext" style="${S.text}">${pages[abs-1]||""}</div>`+
           catchEl+
           foot+

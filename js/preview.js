@@ -11,7 +11,14 @@ export function panelOpts(){
   const pgOn  = $("pgnum")   ? $("pgnum").checked   : true;
   const sigOn = $("sigmark") ? $("sigmark").checked : true;
   const catchOn = $("catch") ? $("catch").checked   : false;
-  return {pgOn, sigOn, catchOn, folioMarks: pgOn||sigOn, catchwords: catchOn};
+  const runOn = $("runtitle") ? $("runtitle").checked : false;
+  const runText = $("runtitletext") ? $("runtitletext").value.trim() : "";
+  // running title only reserves space / shows when it is ticked AND has text
+  const runningTitle = runOn && !!runText;
+  // restart page numbers at 1 in every gathering (display only; content unchanged)
+  const restartNum = $("restartpg") ? $("restartpg").checked : false;
+  return {pgOn, sigOn, catchOn, runOn, runText, runningTitle, restartNum,
+          folioMarks: pgOn||sigOn, catchwords: catchOn};
 }
 /* First word of a page (for the catchword on the previous page). */
 function firstWordOf(html){ return wordsFromHtml(html)[0] || ""; }
@@ -113,8 +120,10 @@ export function drawFormes(){
   const g=(side,title,mk)=>{
     let h=`<div class="forme"><h3><b>${mk}</b> ${title}</h3>`
       +`<div class="sheet" style="grid-template-columns:repeat(${im.C},1fr)">`;
+    // data-leaf groups the two pages of one physical leaf (recto + verso),
+    // which sit on opposite formes — clicking spotlights the whole leaf.
     for(const row of side)for(const cl of row)
-      h+=`<div class="cell${cl.rot?" rot":""}" data-p="${cl.page}">`
+      h+=`<div class="cell${cl.rot?" rot":""}" data-p="${cl.page}" data-leaf="${Math.ceil(cl.page/2)}">`
        +`<span class="num">${cl.page}</span>`
        +(cl.rot?`<span class="flag">180&deg;</span>`:``)+`</div>`;
     return h+`</div></div>`;
@@ -123,9 +132,10 @@ export function drawFormes(){
                       +g(im.inner,"Inner forme &mdash; the reverse","2");
   document.querySelectorAll(".cell").forEach(el=>{
     el.onclick=()=>{
-      const p=el.dataset.p, on=el.classList.contains("hi");
+      const leaf=el.dataset.leaf, on=el.classList.contains("hi");
       document.querySelectorAll(".cell").forEach(x=>x.classList.remove("hi"));
-      if(!on) document.querySelectorAll(`.cell[data-p="${p}"]`).forEach(x=>x.classList.add("hi"));
+      // highlight both pages of this leaf, so it lights up across both formes
+      if(!on) document.querySelectorAll(`.cell[data-leaf="${leaf}"]`).forEach(x=>x.classList.add("hi"));
     };
   });
 }
@@ -140,7 +150,7 @@ export function compose(){
   const per=im.leaves*2;
   const o=panelOpts();
   setPanelSize(297/im.C, 210/im.R);
-  const pages=splitPages(raw,$("para").checked,per,pt,fam,{folioMarks:o.folioMarks,catchwords:o.catchwords});
+  const pages=splitPages(raw,$("para").checked,per,pt,fam,{folioMarks:o.folioMarks,catchwords:o.catchwords,runningTitle:o.runningTitle});
 
   // Pages must form whole gatherings; pad only happens inside splitPages.
   if(pages.length%per!==0){
@@ -167,7 +177,7 @@ export function renderPreview(){
 
   // Identical panel geometry to measure + print (panelStyles).
   const o=panelOpts();
-  const S=panelStyles(pt, fam, {folioMarks:o.folioMarks, catchwords:o.catchwords});
+  const S=panelStyles(pt, fam, {folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle});
 
   let html="";
   for(let g=0;g<nG;g++){
@@ -186,14 +196,24 @@ export function renderPreview(){
         : ``;
 
       // folio strip: signature (left) + page number (right), independent toggles
+      // empty (left) | signature (centred) | page number (right), all one line
+      // page number restarts at 1 per gathering when the option is on
+      const shownNum = o.restartNum ? (p+1) : n;
       const foot = o.folioMarks
         ? `<div class="foot" style="${S.folio}">`
+          + `<span></span>`
           + `<span class="corner">${o.sigOn?`${sig}${g+1}.${leaf}${side}`:""}</span>`
-          + `<span class="pnum">${o.pgOn?n:""}</span></div>`
+          + `<span class="pnum">${o.pgOn?shownNum:""}</span></div>`
+        : ``;
+
+      // running title: reserved on every page, printed only from page 2 on non-blank pages
+      const runEl = o.runningTitle
+        ? `<div class="run" style="${S.run}">${(n>=2 && !blank)?escHtml(o.runText):""}</div>`
         : ``;
 
       html+=`<div class="leaf${blank?" blank":""}">`
           + `<div class="leafframe" style="${S.cell}">`
+          + runEl
           + `<div class="body" style="${S.text}">${body}</div>`
           + catchEl
           + foot

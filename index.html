@@ -3,13 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quire Maker</title>
+<title>QuireMaker</title>
 <link rel="stylesheet" href="css/styles.css">
 </head>
 <body>
 <div class="wrap">
 
 <header>
+<<<<<<< Updated upstream
   <h1>Quire <span>Maker</span></h1>
   <div class="tag">watch it fold &middot; see the pages &middot; print it</div>
 </header>
@@ -23,8 +24,23 @@
       <a href="resources.html">Resources</a>
       <a href="credits.html">Credits</a>
     </div>
+=======
+  <div class="brand">
+    <h1>Quire<span>Maker</span></h1>
+    <div class="tag">watch it fold &middot; see the pages &middot; print it</div>
+>>>>>>> Stashed changes
   </div>
-</nav>
+  <nav class="navbtns sitenav">
+    <a class="btnlink" href="guide.html">User Guide</a>
+    <div class="dropdown">
+      <a class="btnlink ghost" href="about.html">About &#9662;</a>
+      <div class="dropmenu">
+        <a href="resources.html">Resources</a>
+        <a href="credits.html">Credits</a>
+      </div>
+    </div>
+  </nav>
+</header>
 
 <section class="hero">
   <p class="lede">Quire Maker turns any passage of text into a hand-press book. Paste your copy,
@@ -46,7 +62,7 @@
     </select>
 
     <div class="two">
-      <div><label for="sig">Signature</label><input type="text" id="sig" value="A" maxlength="2"></div>
+      <div><label for="sig">Signature Marks</label><input type="text" id="sig" value="A" maxlength="2"></div>
       <div><label for="fs">Size (pt)</label><input type="number" id="fs" value="9.2" step="0.2" min="5" max="16"></div>
     </div>
 
@@ -61,14 +77,17 @@
     <div class="togglebox">
       <div class="togglehead">Show on the page</div>
       <div class="chk"><input type="checkbox" id="pgnum" checked><span>Page numbers</span></div>
-      <div class="chk"><input type="checkbox" id="sigmark" checked><span>Signature</span></div>
+      <div class="chk"><input type="checkbox" id="sigmark" checked><span>Signature Marks</span></div>
       <div class="chk"><input type="checkbox" id="catch" checked><span>Catchwords</span></div>
       <div class="chk"><input type="checkbox" id="para" checked><span>Paragraph breaks</span></div>
+      <div class="chk"><input type="checkbox" id="restartpg"><span>Restart page numbers each gathering</span></div>
+      <div class="chk"><input type="checkbox" id="runtitle"><span>Running title</span></div>
+      <input type="text" id="runtitletext" class="runtitle-input" placeholder="Running title (shown from page 2)">
     </div>
 
     <label for="txt">Copy text</label>
-    <textarea id="txt"></textarea>
     <div class="hint">Blank lines make paragraphs. Overflow starts a fresh gathering automatically.</div>
+    <textarea id="txt"></textarea>
 
     <div class="acts">
       <button id="go">Impose &amp; preview</button>
@@ -92,7 +111,7 @@
     <p class="legend">
       Numbers flagged <b style="color:var(--vermilion)">180&deg;</b> are set upside down on the sheet.
       Click any page to spotlight it in both formes.
-      Print duplex, flipping on the <b>long edge</b>.
+      </b>
     </p>
 
     <div class="previewhead">
@@ -102,6 +121,27 @@
     <div class="book" id="book"><p class="emptynote">Press &ldquo;Impose &amp; preview&rdquo; to flow your text into the pages.</p></div>
   </div>
 </div>
+
+<footer class="sitefoot">
+  <div class="footmain">
+    <div class="footlogo">
+      <img src="images/carletonlogo.png" alt="Carleton College">
+    </div>
+    <address class="footaddr">
+      <b>English Department</b><br>
+      Carleton College<br>
+      One North College Street<br>
+      Northfield, MN, 55057 USA<br>
+      507-222-4000
+    </address>
+  </div>
+  <div class="footlic">
+    <div class="cclicense">
+      <img src="images/copyright.png" alt="CC BY-NC-SA 4.0">
+    </div>
+    <div class="footcopy">&copy; 2026 Carleton College &ndash; All Rights Reserved</div>
+  </div>
+</footer>
 </div>
 
 <div id="out"></div>
