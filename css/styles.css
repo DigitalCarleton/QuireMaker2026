@@ -256,7 +256,7 @@ footer.credit{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px;
 
 /* ---- shared institutional footer box (every page) ---- */
 .sitefoot{border:1px solid var(--rule);background:rgba(255,255,255,.035);
-  margin-top:52px;padding:28px 32px}
+  margin-top:65px;padding:28px 32px}
 .sitefoot .footmain{display:flex;align-items:center;justify-content:center;
   gap:40px;flex-wrap:wrap}
 /* logo slot: dashed placeholder now, swap the inner <span> for an <img> later */
