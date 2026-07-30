@@ -17,8 +17,25 @@ export function panelOpts(){
   const runningTitle = runOn && !!runText;
   // restart page numbers at 1 in every gathering (display only; content unchanged)
   const restartNum = $("restartpg") ? $("restartpg").checked : false;
+  const readM = id => {
+    const el=$(id);
+    if(!el) return 0;
+    const v=parseFloat(el.value);
+    return Number.isFinite(v) ? Math.min(48, Math.max(0, v)) : 0;
+  };
   return {pgOn, sigOn, catchOn, runOn, runText, runningTitle, restartNum,
-          folioMarks: pgOn||sigOn, catchwords: catchOn};
+          folioMarks: pgOn||sigOn, catchwords: catchOn,
+          marginBind:readM("mBind"), marginFore:readM("mFore"),
+          marginTop:readM("mTop"), marginBot:readM("mBot")};
+}
+
+/* Options that affect panel geometry / pagination. */
+function geomOpts(o){
+  return {
+    folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle,
+    marginBind:o.marginBind, marginFore:o.marginFore,
+    marginTop:o.marginTop, marginBot:o.marginBot
+  };
 }
 /* First word of a page (for the catchword on the previous page). */
 function firstWordOf(html){ return wordsFromHtml(html)[0] || ""; }
@@ -64,13 +81,18 @@ export function buildScene(){
 export function layout(){
   const im=T.im, folds=im.folds.slice(0,T.step);
   const stepW=LW+GAP, stepH=LH+GAP;
+  const fullyFolded = T.step===im.folds.length;
+  // Map sheet cell -> leaf index in the finished gathering (0 = outermost = pages 1/2)
+  const leafByCell = Object.create(null);
+  if(im.leafOrder){
+    for(const L of im.leafOrder) leafByCell[L.r+","+L.c] = L;
+  }
 
   document.querySelectorAll(".pc").forEach(el=>{
     const r0=+el.dataset.r, c0=+el.dataset.c;
     // live footprint bookkeeping
     let w=im.C, h=im.R, ox=0, oy=0;   // origin (top-left cell index) of live footprint
     let ry=0, rx=0, depth=0;
-    let col=c0, row=r0;               // this panel's cell coords (constant); track where it lands
     let landCol=c0, landRow=r0;
 
     for(const [ax,dir] of folds){
@@ -98,16 +120,42 @@ export function layout(){
     el.style.left = "50%"; el.style.top="50%";
     el.style.marginLeft = (-LW/2)+"px";
     el.style.marginTop  = (-LH/2)+"px";
-    el.style.transform =
-      `translate3d(${x}px,${y}px,${depth*2.6}px) rotateY(${ry}deg) rotateX(${rx}deg)`;
-    el.style.zIndex = 10+depth;
+
+    /* Fully folded: restack in true gathering order so the outside front is page 1
+       and Turn over shows the outside back (last page), not a random inner leaf.
+       Page 1 lives on the BACK face of the outermost sheet cell, so that leaf is
+       spun 180° around Y to face the viewer. */
+    if(fullyFolded && leafByCell[r0+","+c0]){
+      const L = leafByCell[r0+","+c0];
+      const z = 20 + (im.leaves - L.leaf);   // leaf 0 on top (toward viewer)
+      // face==="back" => odd page is on the .lbl.bk side of this panel
+      const oddOnBack = L.face === "back";
+      let fry = ry, frx = rx;
+      if(L.leaf === 0){
+        // Outside front = page 1 toward viewer
+        fry = oddOnBack ? 180 : 0;
+        frx = 0;
+      }else if(L.leaf === im.leaves - 1){
+        // Outside back = last page facing away; Turn over brings it forward
+        fry = oddOnBack ? 180 : 0;
+        frx = 0;
+      }
+      el.style.transform =
+        `translate3d(${x}px,${y}px,${(im.leaves-L.leaf)*2.6}px) rotateY(${fry}deg) rotateX(${frx}deg)`;
+      el.style.zIndex = z;
+    }else{
+      el.style.transform =
+        `translate3d(${x}px,${y}px,${depth*2.6}px) rotateY(${ry}deg) rotateX(${rx}deg)`;
+      el.style.zIndex = 10+depth;
+    }
   });
 
   const n=im.folds.length, nm={V:"vertical fold",H:"horizontal fold"};
   $("stepTxt").textContent = T.step===0
     ? `flat sheet \u00b7 ${n} fold${n>1?"s":""} to go`
-    : T.step===n ? `folded \u00b7 ${im.leaves} leaves, ${im.leaves*2} pages`
-                 : `fold ${T.step} of ${n} \u00b7 ${nm[im.folds[T.step-1][0]]}`;
+    : T.step===n
+      ? `folded \u00b7 outside front is page 1 \u00b7 Turn over for page ${im.leaves*2}`
+      : `fold ${T.step} of ${n} \u00b7 ${nm[im.folds[T.step-1][0]]}`;
   $("back").disabled=T.step===0;
   $("fwd").disabled=T.step===n;
 }
@@ -144,13 +192,13 @@ export function drawFormes(){
 export let LAST=null;   // {pages, im, sig, pt, fam, nG}
 
 export function compose(){
-  const im=T.im, pt=parseFloat($("fs").value)||9.2, fam=$("face").value;
+  const im=T.im, pt=Math.min(20, Math.max(1, parseFloat($("fs").value)||9.2)), fam=$("face").value;
   const sig=($("sig").value||"A").trim();
   const raw=$("txt").value;
   const per=im.leaves*2;
   const o=panelOpts();
   setPanelSize(297/im.C, 210/im.R);
-  const pages=splitPages(raw,$("para").checked,per,pt,fam,{folioMarks:o.folioMarks,catchwords:o.catchwords,runningTitle:o.runningTitle});
+  const pages=splitPages(raw,$("para").checked,per,pt,fam,geomOpts(o));
 
   // Pages must form whole gatherings; pad only happens inside splitPages.
   if(pages.length%per!==0){
@@ -177,7 +225,10 @@ export function renderPreview(){
 
   // Identical panel geometry to measure + print (panelStyles).
   const o=panelOpts();
-  const S=panelStyles(pt, fam, {folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle});
+  const gOpts=geomOpts(o);
+  // Precompute recto + verso styles (binding/fore-edge swap)
+  const Sr=panelStyles(pt, fam, gOpts, "r");
+  const Sv=panelStyles(pt, fam, gOpts, "v");
 
   let html="";
   for(let g=0;g<nG;g++){
@@ -187,6 +238,7 @@ export function renderPreview(){
       const body=pages[n-1]||"";
       const leaf=Math.ceil((p+1)/2);
       const side=(p%2===0)?"r":"v";
+      const S=side==="r"?Sr:Sv;
       const blank = !body.trim();
 
       // catchword = first word of the NEXT page, in brackets, bottom-right

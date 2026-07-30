@@ -41,7 +41,7 @@ People on other networks will not reach your laptop this way. For a link everyon
 2. **Set a signature mark** if you want (usually the letter `A`). This is the printer's label for that gathering.
 3. **Choose type size and typeface** to taste.
 4. **Tick what you want on the page:** page numbers, signature marks, catchwords, paragraph breaks, running title, and whether page numbers restart in each gathering.
-5. **Paste your text** into the Copy text box. Blank lines become paragraphs when that option is on. Long text spills into as many gatherings as it needs. Nothing gets dropped.
+5. **Paste your text** into the Paste text box. Blank lines become paragraphs when that option is on. Long text spills into as many gatherings as it needs. Nothing gets dropped.
 6. **Press Impose & preview.** Watch the sheet fold in the theatre. Scroll down to read the finished pages in order.
 7. **Click a page on the forme maps** to spotlight that leaf on both sides of the sheet. Numbers tagged `180°` are printed upside down on purpose. They come right side up after you fold.
 8. **Press Print.** Use duplex (two-sided) printing and flip on the long edge. Fold, nest the sheets, and you have a quire.

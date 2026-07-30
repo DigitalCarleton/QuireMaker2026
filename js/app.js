@@ -19,9 +19,43 @@ $("fmt").onchange=reload;
 $("sig").oninput=()=>{ drawFormes(); if(LAST){compose();renderPreview();} };
 
 // Live update when any page-furniture / type option changes.
-["pgnum","sigmark","catch","para","face","fs","runtitle","restartpg"].forEach(id=>{
+["pgnum","sigmark","catch","para","face","runtitle","restartpg"].forEach(id=>{
   const el=$(id);
   if(el) el.addEventListener("change",()=>{ if(LAST){ compose(); renderPreview(); } });
+});
+// Size field: free entry, but hard-capped at 20 so pages never blow up.
+if($("fs")){
+  $("fs").addEventListener("input",()=>{
+    const el=$("fs");
+    const v=parseFloat(el.value);
+    if(Number.isFinite(v) && v>20) el.value="20";
+    if(LAST){ compose(); renderPreview(); }
+  });
+  $("fs").addEventListener("change",()=>{
+    const el=$("fs");
+    let v=parseFloat(el.value);
+    if(!Number.isFinite(v) || v<1) v=9.2;
+    v=Math.min(20, Math.max(1, v));
+    el.value=String(v);
+    if(LAST){ compose(); renderPreview(); }
+  });
+}
+// White-space margins: live update, clamp 0–48 pt
+["mBind","mFore","mTop","mBot"].forEach(id=>{
+  const el=$(id);
+  if(!el) return;
+  const clamp=()=>{
+    let v=parseFloat(el.value);
+    if(!Number.isFinite(v) || v<0) v=0;
+    if(v>48) v=48;
+    el.value=String(v);
+  };
+  el.addEventListener("input",()=>{
+    const v=parseFloat(el.value);
+    if(Number.isFinite(v) && v>48) el.value="48";
+    if(LAST){ compose(); renderPreview(); }
+  });
+  el.addEventListener("change",()=>{ clamp(); if(LAST){ compose(); renderPreview(); } });
 });
 // Typing a running title updates the preview live.
 if($("runtitletext")) $("runtitletext").addEventListener("input",()=>{ if(LAST){ compose(); renderPreview(); } });

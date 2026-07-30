@@ -39,6 +39,11 @@ export function impose(key){
   const f=FORMATS[key], stack=simulate(f.C,f.R,f.folds);
   const mk=()=>Array.from({length:f.R},()=>Array(f.C).fill(null));
   const A=mk(),B=mk();
+  // leafOrder: outermost leaf first (pages 1/2), innermost last — matches a real gathering
+  const leafOrder=stack.map((l,i)=>({
+    r:l.r, c:l.c, face:l.face, flip:l.flip,
+    leaf:i, p1:2*i+1, p2:2*i+2
+  }));
   stack.forEach((l,i)=>{
     const p1=2*i+1,p2=2*i+2;
     if(l.face==="front"){A[l.r][l.c]={page:p1,rot:l.flip};B[l.r][f.C-1-l.c]={page:p2,rot:l.flip};}
@@ -46,5 +51,5 @@ export function impose(key){
   });
   const aOne=A.flat().some(x=>x.page===1);
   return {outer:aOne?A:B, inner:aOne?B:A, sideA:A, sideB:B,
-          C:f.C,R:f.R,leaves:f.C*f.R,folds:f.folds};
+          C:f.C,R:f.R,leaves:f.C*f.R,folds:f.folds, leafOrder};
 }

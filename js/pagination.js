@@ -57,74 +57,129 @@ function padToGatherings(pages,per){
 /* Normalize the panel options. Accepts a legacy boolean (folio marks on/off)
    or an object {folioMarks, catchwords}. */
 function normOpts(o){
-  if(o===true||o===false||o==null) return {folioMarks:!!o, catchwords:false, runningTitle:false};
-  return {folioMarks:!!o.folioMarks, catchwords:!!o.catchwords, runningTitle:!!o.runningTitle};
+  if(o===true||o===false||o==null){
+    return {folioMarks:!!o, catchwords:false, runningTitle:false,
+            marginBind:0, marginFore:0, marginTop:0, marginBot:0};
+  }
+  const clampM = v => Math.min(48, Math.max(0, Number(v)||0));
+  return {
+    folioMarks:!!o.folioMarks,
+    catchwords:!!o.catchwords,
+    runningTitle:!!o.runningTitle,
+    marginBind:clampM(o.marginBind),
+    marginFore:clampM(o.marginFore),
+    marginTop:clampM(o.marginTop),
+    marginBot:clampM(o.marginBot)
+  };
 }
+
+const PT_PX = 96/72; // CSS px per typographic point at 96dpi
 
 /* Single source of truth for panel geometry (px).
    Bottom of the panel, below the text area, can carry two fixed strips:
      - a catchword strip (body size, right aligned)   [catchH]
      - a folio strip (signature + page number, 7.5pt) [folioH]
-   Both live OUTSIDE the text area so they never overlap the copy. */
+   Both live OUTSIDE the text area so they never overlap the copy.
+   White-space margins (pt) shrink the text block; binding/fore-edge
+   swap on recto vs verso but the usable width stays the same. */
 export function panelMetrics(pt,opts){
-  const {folioMarks,catchwords,runningTitle}=normOpts(opts);
-  const lineH=Math.max(8, pt*1.3333*1.42);
-  const pad=6*MM;
+  const o=normOpts(opts);
+  const {folioMarks,catchwords,runningTitle}=o;
+  const size=Math.min(20, Math.max(1, Number(pt)||9.2));
+  const lineH=Math.max(8, size*1.3333*1.42);
+  const base=6*MM; // default page inset (same as before when margins are 0)
+  const bindPx=o.marginBind*PT_PX;
+  const forePx=o.marginFore*PT_PX;
+  const topPx=o.marginTop*PT_PX;
+  const botPx=o.marginBot*PT_PX;
   const pw=(PW>1)?PW:74.25, ph=(PH>1)?PH:105;
   const cellW=pw*MM, cellH=ph*MM;
-  const innerW=Math.max(lineH*6, cellW-2*pad);
-  const innerH=Math.max(lineH*8, cellH-2*pad);
+  const padX = base*2 + bindPx + forePx;
+  const padY = base*2 + topPx + botPx;
+  let innerW=cellW-padX;
+  let innerH=cellH-padY;
+  if(!(innerW>=lineH*4)) innerW=Math.max(lineH*4, cellW*0.45);
+  if(!(innerH>=lineH*4)) innerH=Math.max(lineH*4, cellH*0.45);
   const folioLineH=7.5*1.3333*1.2;
   const folioH=folioMarks ? (2*MM + folioLineH) : 0;
-  const catchH=catchwords ? (1.5*MM + lineH) : 0;   // catchword uses body line height
-  const runLineH=pt*1.3333*1.2;                     // running-head line
-  const runH=runningTitle ? (2*MM + runLineH) : 0;  // reserved on every page (blank on p.1)
+  const catchH=catchwords ? (1.5*MM + lineH) : 0;
+  const runLineH=size*1.3333*1.2;
+  const runH=runningTitle ? (2*MM + runLineH) : 0;
   let textAreaH=innerH-folioH-catchH-runH;
-  if(!(textAreaH>=lineH*3)) textAreaH=Math.max(lineH*12, innerH*0.9, 180);
-  const headroom=lineH;                        // reserve exactly one line
+  if(!(textAreaH>=lineH*3)) textAreaH=Math.max(lineH*3, innerH*0.55);
+  const headroom=lineH;
   const fitH=Math.max(lineH*2, textAreaH-headroom);
-  return {lineH,pad,folioH,catchH,folioLineH,runH,runLineH,cellW,cellH,innerW,innerH,
-          textAreaH,headroom,fitH,folioMarks,catchwords,runningTitle,pw,ph,MM};
+  return {lineH, base, bindPx, forePx, topPx, botPx,
+          folioH,catchH,folioLineH,runH,runLineH,cellW,cellH,innerW,innerH,
+          textAreaH,headroom,fitH,folioMarks,catchwords,runningTitle,pw,ph,MM,
+          marginBind:o.marginBind, marginFore:o.marginFore,
+          marginTop:o.marginTop, marginBot:o.marginBot};
 }
 
-function cssFontFamily(fam){ return String(fam||'Georgia,serif').replace(/"/g,"'"); }
+function cssFontFamily(fam){
+  // Keep a usable CSS font-family list; normalize smart quotes / leftover doubles.
+  return String(fam||"Georgia, serif")
+    .replace(/[“”]/g,'"')
+    .replace(/"/g,"'")
+    .trim() || "Georgia, serif";
+}
 
-export function panelStyles(pt,fam,opts){
+/* side: "r" (recto/odd) or "v" (verso/even). Binding sits toward the spine. */
+export function panelStyles(pt,fam,opts,side="r"){
   const m=panelMetrics(pt,opts);
-  const font=`font-family:${cssFontFamily(fam)};font-size:${pt}pt;line-height:1.42`;
+  const size=Math.min(20, Math.max(1, Number(pt)||9.2));
+  const font=`font-family:${cssFontFamily(fam)};font-size:${size}pt;line-height:1.42`;
+  // Recto: spine on the left → binding left, fore-edge right
+  // Verso: spine on the right → fore-edge left, binding right
+  const padL = m.base + (side==="v" ? m.forePx : m.bindPx);
+  const padR = m.base + (side==="v" ? m.bindPx : m.forePx);
+  const padT = m.base + m.topPx;
+  const padB = m.base + m.botPx;
   return {
     m,
-    cell:`width:${m.cellW}px;height:${m.cellH}px;padding:${m.pad}px;box-sizing:border-box;`+
+    cell:`width:${m.cellW}px;height:${m.cellH}px;`+
+      `padding:${padT}px ${padR}px ${padB}px ${padL}px;box-sizing:border-box;`+
       `display:flex;flex-direction:column;overflow:hidden;${font}`,
     /* running-title strip: sits at the very top, centred italic */
     run:`width:${m.innerW}px;height:${m.runH}px;flex:0 0 ${m.runH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-start;justify-content:center;`+
-      `font-style:italic;font-size:${pt}pt;line-height:1.2;color:#2a2620;`+
+      `font-style:italic;font-size:${size}pt;line-height:1.2;color:#2a2620;`+
       `font-family:${cssFontFamily(fam)}`,
     text:`width:${m.innerW}px;height:${m.textAreaH}px;flex:0 0 ${m.textAreaH}px;`+
       `max-height:${m.textAreaH}px;box-sizing:border-box;overflow:hidden;`+
-      `text-align:justify;hyphens:none;-webkit-hyphens:none;${font}`,
+      `text-align:justify;hyphens:none;-webkit-hyphens:none;`+
+      `overflow-wrap:anywhere;word-break:break-word;${font}`,
     /* catchword strip: sits just under the text, aligned to the right edge */
     catch:`width:${m.innerW}px;height:${m.catchH}px;flex:0 0 ${m.catchH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-end;justify-content:flex-end;`+
       `color:#2a2620;${font}`,
-    /* folio strip: signature (left) and page number (right) */
+    /* folio strip: signature + page number; same family as body, smaller size */
     folio:`width:${m.innerW}px;height:${m.folioH}px;flex:0 0 ${m.folioH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-end;justify-content:space-between;`+
-      `font-size:7.5pt;line-height:1.2;color:#555`
+      `font-family:${cssFontFamily(fam)};font-size:7.5pt;line-height:1.2;color:#555`
   };
 }
 
-/* Canvas: how many chars fit on one line at this width/font. Always works. */
+/* How many chars fit on one line — measure with a real DOM node using the
+   same font-family / font-size as the page, so pagination matches what you see.
+   (Canvas font strings often mis-parse multi-family stacks and then under/over-fill.) */
 function charsPerLine(pt,fam,innerWpx){
-  const canvas=document.createElement('canvas');
-  const ctx=canvas.getContext('2d');
-  ctx.font=`${pt}pt ${cssFontFamily(fam)}`;
-  const sample='abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz ';
-  const avg=ctx.measureText(sample).width/sample.length || pt*0.5;
+  const size=Math.min(20, Math.max(1, Number(pt)||9.2));
+  const sample="abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz ";
+  const el=document.createElement("span");
+  el.setAttribute("aria-hidden","true");
+  el.style.cssText=
+    "position:absolute;left:-99999px;top:0;visibility:hidden;white-space:nowrap;"+
+    "margin:0;padding:0;border:0;"+
+    `font-family:${cssFontFamily(fam)};font-size:${size}pt;line-height:1.42`;
+  el.textContent=sample;
+  document.body.appendChild(el);
+  const w=el.getBoundingClientRect().width;
+  document.body.removeChild(el);
+  const avg=(w>0 ? w/sample.length : size*0.5);
   return Math.max(10, Math.floor(innerWpx/avg));
 }
 

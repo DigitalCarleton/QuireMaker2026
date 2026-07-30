@@ -16,13 +16,9 @@
   </div>
   <nav class="navbtns sitenav">
     <a class="btnlink" href="guide.html">User Guide</a>
-    <div class="dropdown">
-      <a class="btnlink ghost" href="about.html">About &#9662;</a>
-      <div class="dropmenu">
-        <a href="resources.html">Resources</a>
-        <a href="credits.html">Credits</a>
-      </div>
-    </div>
+    <a class="btnlink" href="about.html">About</a>
+    <a class="btnlink" href="resources.html">Resources</a>
+    <a class="btnlink" href="credits.html">Credits</a>
   </nav>
 </header>
 
@@ -33,6 +29,7 @@
   early modern books were actually made.</p>
   <img class="hero-img" src="images/quire.jpg" alt="A folded quire">
 </section>
+<p class="hero-guide">New here? <a href="guide.html">Learn how to use the tool</a>.</p>
 
 <div class="cols">
   <div class="panel">
@@ -48,15 +45,15 @@
 
     <div class="two">
       <div><label for="sig">Signature Marks</label><input type="text" id="sig" value="A" maxlength="2"></div>
-      <div><label for="fs">Size (pt)</label><input type="number" id="fs" value="9.2" step="0.2" min="5" max="16"></div>
+      <div><label for="fs">Size (pt)</label><input type="number" id="fs" value="9.2" step="0.2" min="1" max="20" title="For ideal results, keep size between 5 and 20"></div>
     </div>
 
     <label for="face">Typeface</label>
     <select id="face">
-      <option value='"Iowan Old Style",Georgia,serif'>Old style serif</option>
-      <option value='"Palatino Linotype",Palatino,serif'>Palatino</option>
-      <option value='"Times New Roman",Times,serif'>Times</option>
-      <option value='Baskerville,"Libre Baskerville",serif'>Baskerville</option>
+      <option value="'Iowan Old Style', Georgia, serif">Old style serif</option>
+      <option value="'Palatino Linotype', Palatino, 'Book Antiqua', serif">Palatino</option>
+      <option value="'Times New Roman', Times, serif">Times</option>
+      <option value="Baskerville, Georgia, serif">Baskerville</option>
     </select>
 
     <div class="togglebox">
@@ -70,7 +67,20 @@
       <input type="text" id="runtitletext" class="runtitle-input" placeholder="Running title (shown from page 2)">
     </div>
 
-    <label for="txt">Copy text</label>
+    <div class="togglebox whitespace">
+      <div class="togglehead">White space</div>
+      <div class="hint">Margins in points (1&nbsp;pt&nbsp;=&nbsp;1/72&nbsp;inch). Binding is the spine side; fore-edge is the outer edge. They swap automatically on recto and verso.</div>
+      <div class="two">
+        <div><label for="mBind">Binding</label><input type="number" id="mBind" value="0" min="0" max="48" step="1" title="Inner margin toward the spine"></div>
+        <div><label for="mFore">Fore-edge</label><input type="number" id="mFore" value="0" min="0" max="48" step="1" title="Outer margin away from the spine"></div>
+      </div>
+      <div class="two">
+        <div><label for="mTop">Top</label><input type="number" id="mTop" value="0" min="0" max="48" step="1"></div>
+        <div><label for="mBot">Bottom</label><input type="number" id="mBot" value="0" min="0" max="48" step="1"></div>
+      </div>
+    </div>
+
+    <h2>Paste text</h2>
     <div class="hint">Blank lines make paragraphs. Overflow starts a fresh gathering automatically.</div>
     <textarea id="txt"></textarea>
 

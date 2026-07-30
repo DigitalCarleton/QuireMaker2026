@@ -7,6 +7,14 @@ const $ = i => document.getElementById(i);
 const escHtml = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 const firstWordOf = html => wordsFromHtml(html)[0] || "";
 
+function geomOpts(o){
+  return {
+    folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle,
+    marginBind:o.marginBind, marginFore:o.marginFore,
+    marginTop:o.marginTop, marginBot:o.marginBot
+  };
+}
+
 /* print sheets — identical panel geometry to the measure panel via panelStyles() */
 export function buildPrint(data){
   const src=data||LAST;
@@ -17,7 +25,9 @@ export function buildPrint(data){
   const {pages,im,sig,pt,fam,nG}=src;
   const per=im.leaves*2;
   const o=(src.opts)||panelOpts();
-  const S=panelStyles(pt, fam, {folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle});
+  const gOpts=geomOpts(o);
+  const Sr=panelStyles(pt, fam, gOpts, "r");
+  const Sv=panelStyles(pt, fam, gOpts, "v");
 
   if(pages.length!==nG*per){
     console.error(
@@ -37,6 +47,7 @@ export function buildPrint(data){
         const abs=base+cl.page;
         const leaf=Math.ceil(cl.page/2);
         const rv=cl.page%2?"r":"v";
+        const S=rv==="r"?Sr:Sv;
 
         // catchword = first word of the NEXT page (reading order), bracketed
         const cwWord = o.catchwords ? firstWordOf(pages[abs]) : "";
