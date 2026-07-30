@@ -129,6 +129,8 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
   align-items:center;margin:0 0 12px;max-width:none;text-align:left}
 .lede{font-size:clamp(16px,2.2vw,20px);line-height:1.6;color:var(--paper);margin:0}
 .lede em{color:var(--gold);font-style:normal}
+.lede a,.panel a,.hint a{color:var(--gold);text-decoration:none}
+.lede a:hover,.panel a:hover,.hint a:hover{color:var(--vermilion)}
 .hero-guide{margin:0 0 28px;font-size:15px;line-height:1.5;color:var(--dim)}
 .hero-guide a{color:var(--gold);text-decoration:none}
 .hero-guide a:hover{color:var(--vermilion)}
@@ -301,4 +303,5 @@ footer.credit{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px;
   .ptext{min-height:0;text-align:justify}
   .ptext p{margin:0 0 .5em}
   .pcatch{min-height:0}
-  .pfol{min-height:0}}
+  .pfol{min-height:0}
+  .ppnum{pointer-events:none}}

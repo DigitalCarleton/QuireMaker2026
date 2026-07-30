@@ -9,7 +9,8 @@ const firstWordOf = html => wordsFromHtml(html)[0] || "";
 
 function geomOpts(o){
   return {
-    folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle,
+    folioMarks:o.folioMarks, pageNums:o.pageNums,
+    catchwords:o.catchwords, runningTitle:o.runningTitle,
     marginBind:o.marginBind, marginFore:o.marginFore,
     marginTop:o.marginTop, marginBot:o.marginBot
   };
@@ -55,15 +56,16 @@ export function buildPrint(data){
           ? `<div class="pcatch" style="${S.catch}">${cwWord?("["+escHtml(cwWord)+"]"):""}</div>`
           : ``;
 
-        // folio strip: signature (left) + page number (right), independent toggles
-        // empty (left) | signature (centred) | page number (right), all one line
-        // page number restarts at 1 per gathering when the option is on
+        // signature at the bottom (moves with margins)
+        const foot = o.sigOn
+          ? `<div class="pfol" style="${S.folio}">`+
+              `<span>${sig}${g+1}.${leaf}${rv}</span></div>`
+          : ``;
+
+        // page number: fixed top-right of the page cell (does not move with margins)
         const shownNum = o.restartNum ? cl.page : abs;
-        const foot = o.folioMarks
-          ? `<div class="pfol" style="${S.folio}">`
-            + `<span></span>`
-            + `<span>${o.sigOn?`${sig}${g+1}.${leaf}${rv}`:""}</span>`
-            + `<span>${o.pgOn?shownNum:""}</span></div>`
+        const pnumEl = o.pgOn
+          ? `<div class="ppnum" style="${S.pnum}">${shownNum}</div>`
           : ``;
 
         // running title: reserved on every page, printed only from page 2 on non-blank pages
@@ -73,6 +75,7 @@ export function buildPrint(data){
 
         // pages that sit upside-down on the sheet carry the .rot (180deg) class
         o_html+=`<div class="pcell${cl.rot?" rot":""}" style="${S.cell}">`+
+          pnumEl+
           runEl+
           `<div class="ptext" style="${S.text}">${pages[abs-1]||""}</div>`+
           catchEl+

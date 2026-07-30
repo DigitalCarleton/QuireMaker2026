@@ -24,7 +24,8 @@ export function panelOpts(){
     return Number.isFinite(v) ? Math.min(48, Math.max(0, v)) : 0;
   };
   return {pgOn, sigOn, catchOn, runOn, runText, runningTitle, restartNum,
-          folioMarks: pgOn||sigOn, catchwords: catchOn,
+          // bottom signature strip moves with margins; page numbers are fixed top-right
+          folioMarks: sigOn, pageNums: pgOn, catchwords: catchOn,
           marginBind:readM("mBind"), marginFore:readM("mFore"),
           marginTop:readM("mTop"), marginBot:readM("mBot")};
 }
@@ -32,7 +33,8 @@ export function panelOpts(){
 /* Options that affect panel geometry / pagination. */
 function geomOpts(o){
   return {
-    folioMarks:o.folioMarks, catchwords:o.catchwords, runningTitle:o.runningTitle,
+    folioMarks:o.folioMarks, pageNums:o.pageNums,
+    catchwords:o.catchwords, runningTitle:o.runningTitle,
     marginBind:o.marginBind, marginFore:o.marginFore,
     marginTop:o.marginTop, marginBot:o.marginBot
   };
@@ -247,15 +249,16 @@ export function renderPreview(){
         ? `<div class="catch" style="${S.catch}">${cwWord?("["+escHtml(cwWord)+"]"):""}</div>`
         : ``;
 
-      // folio strip: signature (left) + page number (right), independent toggles
-      // empty (left) | signature (centred) | page number (right), all one line
-      // page number restarts at 1 per gathering when the option is on
+      // signature at the bottom (moves with margins)
+      const foot = o.sigOn
+        ? `<div class="foot" style="${S.folio}">`+
+            `<span class="corner">${sig}${g+1}.${leaf}${side}</span></div>`
+        : ``;
+
+      // page number: fixed top-right of the page cell (does not move with margins)
       const shownNum = o.restartNum ? (p+1) : n;
-      const foot = o.folioMarks
-        ? `<div class="foot" style="${S.folio}">`
-          + `<span></span>`
-          + `<span class="corner">${o.sigOn?`${sig}${g+1}.${leaf}${side}`:""}</span>`
-          + `<span class="pnum">${o.pgOn?shownNum:""}</span></div>`
+      const pnumEl = o.pgOn
+        ? `<div class="pnum" style="${S.pnum}">${shownNum}</div>`
         : ``;
 
       // running title: reserved on every page, printed only from page 2 on non-blank pages
@@ -265,6 +268,7 @@ export function renderPreview(){
 
       html+=`<div class="leaf${blank?" blank":""}">`
           + `<div class="leafframe" style="${S.cell}">`
+          + pnumEl
           + runEl
           + `<div class="body" style="${S.text}">${body}</div>`
           + catchEl

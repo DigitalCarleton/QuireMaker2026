@@ -58,12 +58,15 @@ function padToGatherings(pages,per){
    or an object {folioMarks, catchwords}. */
 function normOpts(o){
   if(o===true||o===false||o==null){
-    return {folioMarks:!!o, catchwords:false, runningTitle:false,
+    return {folioMarks:!!o, pageNums:!!o, catchwords:false, runningTitle:false,
             marginBind:0, marginFore:0, marginTop:0, marginBot:0};
   }
   const clampM = v => Math.min(48, Math.max(0, Number(v)||0));
   return {
+    // folioMarks = signature strip at the bottom (moves with margins)
     folioMarks:!!o.folioMarks,
+    // pageNums = fixed top-right page number (does NOT move with margins)
+    pageNums:!!o.pageNums,
     catchwords:!!o.catchwords,
     runningTitle:!!o.runningTitle,
     marginBind:clampM(o.marginBind),
@@ -78,8 +81,9 @@ const PT_PX = 96/72; // CSS px per typographic point at 96dpi
 /* Single source of truth for panel geometry (px).
    Bottom of the panel, below the text area, can carry two fixed strips:
      - a catchword strip (body size, right aligned)   [catchH]
-     - a folio strip (signature + page number, 7.5pt) [folioH]
-   Both live OUTSIDE the text area so they never overlap the copy.
+     - a signature strip (moves with margins)         [folioH]
+   Page numbers sit absolutely at the top-right of the page cell and do
+   not consume the margin-aware text box (they stay put when margins change).
    White-space margins (pt) shrink the text block; binding/fore-edge
    swap on recto vs verso but the usable width stays the same. */
 export function panelMetrics(pt,opts){
@@ -111,7 +115,7 @@ export function panelMetrics(pt,opts){
   const fitH=Math.max(lineH*2, textAreaH-headroom);
   return {lineH, base, bindPx, forePx, topPx, botPx,
           folioH,catchH,folioLineH,runH,runLineH,cellW,cellH,innerW,innerH,
-          textAreaH,headroom,fitH,folioMarks,catchwords,runningTitle,pw,ph,MM,
+          textAreaH,headroom,fitH,folioMarks,pageNums:o.pageNums,catchwords,runningTitle,pw,ph,MM,
           marginBind:o.marginBind, marginFore:o.marginFore,
           marginTop:o.marginTop, marginBot:o.marginBot};
 }
@@ -137,10 +141,14 @@ export function panelStyles(pt,fam,opts,side="r"){
   const padB = m.base + m.botPx;
   return {
     m,
-    cell:`width:${m.cellW}px;height:${m.cellH}px;`+
+    cell:`width:${m.cellW}px;height:${m.cellH}px;position:relative;`+
       `padding:${padT}px ${padR}px ${padB}px ${padL}px;box-sizing:border-box;`+
       `display:flex;flex-direction:column;overflow:hidden;${font}`,
-    /* running-title strip: sits at the very top, centred italic */
+    /* page number: fixed to the page cell's top-right — ignores margin padding */
+    pnum:`position:absolute;top:${Math.max(4, m.base*0.4)}px;right:${Math.max(4, m.base*0.45)}px;`+
+      `margin:0;padding:0;z-index:2;pointer-events:none;`+
+      `font-family:${cssFontFamily(fam)};font-size:7.5pt;line-height:1;color:#555`,
+    /* running-title strip: sits at the very top of the text block, centred italic */
     run:`width:${m.innerW}px;height:${m.runH}px;flex:0 0 ${m.runH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-start;justify-content:center;`+
@@ -155,10 +163,10 @@ export function panelStyles(pt,fam,opts,side="r"){
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-end;justify-content:flex-end;`+
       `color:#2a2620;${font}`,
-    /* folio strip: signature + page number; same family as body, smaller size */
+    /* signature strip at the bottom (moves with margins) */
     folio:`width:${m.innerW}px;height:${m.folioH}px;flex:0 0 ${m.folioH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
-      `display:flex;align-items:flex-end;justify-content:space-between;`+
+      `display:flex;align-items:flex-end;justify-content:center;`+
       `font-family:${cssFontFamily(fam)};font-size:7.5pt;line-height:1.2;color:#555`
   };
 }
