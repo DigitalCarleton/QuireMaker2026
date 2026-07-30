@@ -85,36 +85,76 @@ const PT_PX = 96/72; // CSS px per typographic point at 96dpi
    Page numbers sit absolutely at the top-right of the page cell and do
    not consume the margin-aware text box (they stay put when margins change).
    White-space margins (pt) shrink the text block; binding/fore-edge
-   swap on recto vs verso but the usable width stays the same. */
+   swap on recto vs verso but the usable width stays the same.
+
+   On tiny sheets (e.g. B10), insets and furniture shrink with the panel so
+   the text box never claims more pixels than the cell actually has — that
+   was clipping mid-word in the preview. */
 export function panelMetrics(pt,opts){
   const o=normOpts(opts);
   const {folioMarks,catchwords,runningTitle}=o;
   const size=Math.min(20, Math.max(1, Number(pt)||9.2));
-  const lineH=Math.max(8, size*1.3333*1.42);
-  const base=6*MM; // default page inset (same as before when margins are 0)
-  const bindPx=o.marginBind*PT_PX;
-  const forePx=o.marginFore*PT_PX;
-  const topPx=o.marginTop*PT_PX;
-  const botPx=o.marginBot*PT_PX;
   const pw=(PW>1)?PW:74.25, ph=(PH>1)?PH:105;
-  const cellW=pw*MM, cellH=ph*MM;
-  const padX = base*2 + bindPx + forePx;
-  const padY = base*2 + topPx + botPx;
-  let innerW=cellW-padX;
-  let innerH=cellH-padY;
-  if(!(innerW>=lineH*4)) innerW=Math.max(lineH*4, cellW*0.45);
-  if(!(innerH>=lineH*4)) innerH=Math.max(lineH*4, cellH*0.45);
-  const folioLineH=7.5*1.3333*1.2;
-  const folioH=folioMarks ? (2*MM + folioLineH) : 0;
-  const catchH=catchwords ? (1.5*MM + lineH) : 0;
-  const runLineH=size*1.3333*1.2;
-  const runH=runningTitle ? (2*MM + runLineH) : 0;
+  const cellW=Math.max(8, pw*MM), cellH=Math.max(8, ph*MM);
+
+  // Default inset ~6mm on normal pages; shrink on small panels so padding
+  // cannot eat the whole cell.
+  const baseIdeal=6*MM;
+  const base=Math.max(1.5, Math.min(baseIdeal, cellW*0.08, cellH*0.08));
+
+  let bindPx=o.marginBind*PT_PX;
+  let forePx=o.marginFore*PT_PX;
+  let topPx=o.marginTop*PT_PX;
+  let botPx=o.marginBot*PT_PX;
+
+  // Cap total padding so at least ~45% of the cell remains for content.
+  const maxPadX=cellW*0.55, maxPadY=cellH*0.55;
+  let padX=base*2+bindPx+forePx;
+  let padY=base*2+topPx+botPx;
+  if(padX>maxPadX && padX>0){
+    const s=maxPadX/padX;
+    bindPx*=s; forePx*=s;
+    padX=base*2+bindPx+forePx;
+  }
+  if(padY>maxPadY && padY>0){
+    const s=maxPadY/padY;
+    topPx*=s; botPx*=s;
+    padY=base*2+topPx+botPx;
+  }
+
+  // NEVER inflate past the real cell — that caused overflow clipping.
+  const innerW=Math.max(4, cellW-padX);
+  const innerH=Math.max(4, cellH-padY);
+
+  // Keep the user's size when it fits; otherwise shrink so a short word can
+  // sit on a line (preview + pagination stay in sync).
+  const maxPtForWidth=Math.max(3, (innerW/4)/PT_PX);
+  const maxPtForHeight=Math.max(3, (innerH/3.2)/PT_PX);
+  const effSize=Math.min(size, maxPtForWidth, maxPtForHeight);
+  const lineH=Math.max(6, effSize*1.3333*1.42);
+
+  const folioPt=Math.min(7.5, Math.max(4, effSize*0.85));
+  const folioLineH=folioPt*1.3333*1.2;
+  let folioH=folioMarks ? Math.min(2*MM+folioLineH, innerH*0.22) : 0;
+  let catchH=catchwords ? Math.min(1.5*MM+lineH, innerH*0.28) : 0;
+  const runLineH=effSize*1.3333*1.2;
+  let runH=runningTitle ? Math.min(2*MM+runLineH, innerH*0.22) : 0;
+
+  // Prefer giving the text block the majority of the inner area.
   let textAreaH=innerH-folioH-catchH-runH;
-  if(!(textAreaH>=lineH*3)) textAreaH=Math.max(lineH*3, innerH*0.55);
-  const headroom=lineH;
-  const fitH=Math.max(lineH*2, textAreaH-headroom);
-  return {lineH, base, bindPx, forePx, topPx, botPx,
-          folioH,catchH,folioLineH,runH,runLineH,cellW,cellH,innerW,innerH,
+  if(textAreaH<lineH && (folioH+catchH+runH)>0){
+    const furniture=folioH+catchH+runH;
+    const keep=Math.max(lineH, innerH*0.55);
+    const scale=Math.max(0, (innerH-keep)/furniture);
+    folioH*=scale; catchH*=scale; runH*=scale;
+    textAreaH=innerH-folioH-catchH-runH;
+  }
+  textAreaH=Math.max(Math.min(lineH, innerH), Math.min(textAreaH, innerH));
+
+  const headroom=Math.min(lineH, textAreaH*0.25);
+  const fitH=Math.max(lineH, textAreaH-headroom);
+  return {lineH, base, bindPx, forePx, topPx, botPx, size:effSize, reqSize:size,
+          folioH,catchH,folioLineH,folioPt,runH,runLineH,cellW,cellH,innerW,innerH,
           textAreaH,headroom,fitH,folioMarks,pageNums:o.pageNums,catchwords,runningTitle,pw,ph,MM,
           marginBind:o.marginBind, marginFore:o.marginFore,
           marginTop:o.marginTop, marginBot:o.marginBot};
@@ -131,7 +171,7 @@ function cssFontFamily(fam){
 /* side: "r" (recto/odd) or "v" (verso/even). Binding sits toward the spine. */
 export function panelStyles(pt,fam,opts,side="r"){
   const m=panelMetrics(pt,opts);
-  const size=Math.min(20, Math.max(1, Number(pt)||9.2));
+  const size=m.size; // may be auto-shrunk on tiny panels
   const font=`font-family:${cssFontFamily(fam)};font-size:${size}pt;line-height:1.42`;
   // Recto: spine on the left → binding left, fore-edge right
   // Verso: spine on the right → fore-edge left, binding right
@@ -139,15 +179,16 @@ export function panelStyles(pt,fam,opts,side="r"){
   const padR = m.base + (side==="v" ? m.bindPx : m.forePx);
   const padT = m.base + m.topPx;
   const padB = m.base + m.botPx;
+  const pnumPt=Math.min(m.folioPt||7.5, Math.max(4, size*0.9));
   return {
     m,
     cell:`width:${m.cellW}px;height:${m.cellH}px;position:relative;`+
       `padding:${padT}px ${padR}px ${padB}px ${padL}px;box-sizing:border-box;`+
       `display:flex;flex-direction:column;overflow:hidden;${font}`,
     /* page number: fixed to the page cell's top-right — ignores margin padding */
-    pnum:`position:absolute;top:${Math.max(4, m.base*0.4)}px;right:${Math.max(4, m.base*0.45)}px;`+
+    pnum:`position:absolute;top:${Math.max(2, m.base*0.35)}px;right:${Math.max(2, m.base*0.4)}px;`+
       `margin:0;padding:0;z-index:2;pointer-events:none;`+
-      `font-family:${cssFontFamily(fam)};font-size:7.5pt;line-height:1;color:#555`,
+      `font-family:${cssFontFamily(fam)};font-size:${pnumPt}pt;line-height:1;color:#555`,
     /* running-title strip: sits at the very top of the text block, centred italic */
     run:`width:${m.innerW}px;height:${m.runH}px;flex:0 0 ${m.runH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
@@ -167,7 +208,7 @@ export function panelStyles(pt,fam,opts,side="r"){
     folio:`width:${m.innerW}px;height:${m.folioH}px;flex:0 0 ${m.folioH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-end;justify-content:center;`+
-      `font-family:${cssFontFamily(fam)};font-size:7.5pt;line-height:1.2;color:#555`
+      `font-family:${cssFontFamily(fam)};font-size:${pnumPt}pt;line-height:1.2;color:#555`
   };
 }
 
@@ -188,7 +229,7 @@ function charsPerLine(pt,fam,innerWpx){
   const w=el.getBoundingClientRect().width;
   document.body.removeChild(el);
   const avg=(w>0 ? w/sample.length : size*0.5);
-  return Math.max(10, Math.floor(innerWpx/avg));
+  return Math.max(4, Math.floor(innerWpx/avg));
 }
 
 /* How many visual lines a set of words wraps into, at cpl chars per line. */
@@ -220,8 +261,8 @@ export function splitPages(raw,keep,per,pt,fam,opts){
   }
 
   const m=panelMetrics(pt,opts);
-  const maxLines=Math.max(3, Math.floor(m.fitH/m.lineH));   // never < 3 lines
-  const cpl=charsPerLine(pt,fam,m.innerW);
+  const maxLines=Math.max(1, Math.floor(m.fitH/m.lineH));
+  const cpl=charsPerLine(m.size,fam,m.innerW);
 
   const pages=[]; let curParas=[]; let curLines=0;
   const commit=()=>{ if(curParas.length){ pages.push(curParas.slice()); curParas.length=0; curLines=0; } };

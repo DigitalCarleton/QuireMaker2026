@@ -11,10 +11,11 @@
 
 <header>
   <div class="brand">
-    <h1>Quire<span>Maker</span></h1>
+    <a class="brandlink" href="index.html"><h1>Quire<span>Maker</span></h1></a>
     <div class="tag">watch it fold &middot; see the pages &middot; print it</div>
   </div>
   <nav class="navbtns sitenav">
+    <a class="btnlink" href="index.html" aria-current="page">Homepage</a>
     <a class="btnlink" href="guide.html">User Guide</a>
     <a class="btnlink" href="about.html">About</a>
     <a class="btnlink" href="resources.html">Resources</a>
@@ -84,6 +85,26 @@
       </div>
     </div>
 
+    <div class="togglebox printer">
+      <div class="togglehead">Printer</div>
+      <label for="paper">Paper size</label>
+      <select id="paper"></select>
+      <label for="paperUnit">Display unit for paper selection</label>
+      <select id="paperUnit">
+        <option value="pt">Points</option>
+        <option value="in">Inches</option>
+        <option value="cm" selected>Centimeters</option>
+      </select>
+      <label for="paperW">Dimensions for CUSTOM</label>
+      <div class="paperdims">
+        <input type="number" id="paperW" min="1" step="any" title="Sheet width">
+        <span class="paperx">x</span>
+        <input type="number" id="paperH" min="1" step="any" title="Sheet height">
+        <span id="paperUnitLabel" class="paperunit">(in Centimeters)</span>
+      </div>
+      <div class="hint">Preset sizes print in landscape (long edge horizontal). CUSTOM uses the width&nbsp;&times;&nbsp;height you enter as the sheet size. On very small sheets, type and margins shrink so pages stay readable.</div>
+    </div>
+
     <h2>Paste text</h2>
     <div class="hint">Blank lines make paragraphs. Overflow starts a fresh <a href="https://blogs.bodleian.ox.ac.uk/theconveyor/gatherings-a-display/" target="_blank" rel="noopener noreferrer">gathering</a> automatically.</div>
     <textarea id="txt"></textarea>
@@ -127,7 +148,7 @@
       <img src="images/carletonlogo.png" alt="Carleton College">
     </div>
     <address class="footaddr">
-      <b>English Department</b><br>
+      <b><a href="https://www.carleton.edu/english/" target="_blank" rel="noopener noreferrer">English Department</a></b><br>
       Carleton College<br>
       One North College Street<br>
       Northfield, MN, 55057 USA<br>

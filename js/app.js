@@ -6,8 +6,16 @@ import {
   LAST, compose, renderPreview
 } from "./preview.js";
 import { buildPrint } from "./print.js";
+import {
+  initPaperUI, fillPaperSelect, syncCustomEnabled,
+  convertCustomFields, updateCustomUnitLabel
+} from "./paper.js";
 
 const $ = i => document.getElementById(i);
+
+function refreshAfterPaperChange(){
+  if(LAST){ compose(); renderPreview(); }
+}
 
 /* wiring  */
 function reload(){
@@ -59,6 +67,34 @@ if($("fs")){
 });
 // Typing a running title updates the preview live.
 if($("runtitletext")) $("runtitletext").addEventListener("input",()=>{ if(LAST){ compose(); renderPreview(); } });
+
+// Printer: paper size, display unit, custom dimensions
+initPaperUI();
+if($("paper")){
+  $("paper").addEventListener("change",()=>{
+    syncCustomEnabled();
+    refreshAfterPaperChange();
+  });
+}
+if($("paperUnit")){
+  let prevUnit=$("paperUnit").value;
+  $("paperUnit").addEventListener("change",()=>{
+    const next=$("paperUnit").value;
+    convertCustomFields(prevUnit, next);
+    prevUnit=next;
+    fillPaperSelect();
+    updateCustomUnitLabel();
+    refreshAfterPaperChange();
+  });
+}
+["paperW","paperH"].forEach(id=>{
+  const el=$(id);
+  if(!el) return;
+  el.addEventListener("change",()=>{
+    if($("paper") && $("paper").value==="CUSTOM") refreshAfterPaperChange();
+  });
+});
+
 $("fwd").onclick=()=>{ if(T.step<T.im.folds.length){T.step++;layout();} };
 $("back").onclick=()=>{ if(T.step>0){T.step--;layout();} };
 $("turn").onclick=()=>{ T.back=!T.back; applyStackTransform(); };

@@ -2,6 +2,7 @@
 
 import { LAST, panelOpts } from "./preview.js";
 import { PW, PH, panelStyles, wordsFromHtml } from "./pagination.js";
+import { readPaperUI } from "./paper.js";
 
 const $ = i => document.getElementById(i);
 const escHtml = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -14,6 +15,23 @@ function geomOpts(o){
     marginBind:o.marginBind, marginFore:o.marginFore,
     marginTop:o.marginTop, marginBot:o.marginBot
   };
+}
+
+function applyPrintSheetSize(wMm, hMm){
+  let style=document.getElementById("printSheetStyle");
+  if(!style){
+    style=document.createElement("style");
+    style.id="printSheetStyle";
+    document.head.appendChild(style);
+  }
+  const w=(Number(wMm)>10?Number(wMm):297).toFixed(3);
+  const h=(Number(hMm)>10?Number(hMm):210).toFixed(3);
+  style.textContent=
+    `@media print{
+      @page{size:${w}mm ${h}mm;margin:0}
+      html,body{width:${w}mm;height:${h}mm}
+      .psheet{width:${w}mm;height:${h}mm}
+    }`;
 }
 
 /* print sheets — identical panel geometry to the measure panel via panelStyles() */
@@ -29,6 +47,8 @@ export function buildPrint(data){
   const gOpts=geomOpts(o);
   const Sr=panelStyles(pt, fam, gOpts, "r");
   const Sv=panelStyles(pt, fam, gOpts, "v");
+  const sheet=src.sheet||readPaperUI();
+  applyPrintSheetSize(sheet.w, sheet.h);
 
   if(pages.length!==nG*per){
     console.error(

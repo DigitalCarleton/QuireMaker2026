@@ -7,14 +7,26 @@ html,body{margin:0;padding:0}
 body{background:radial-gradient(120% 90% at 50% -10%,#2e2a23 0%,var(--board) 60%);
   color:var(--paper);font-family:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
   font-size:16px;line-height:1.55;min-height:100vh}
+a{color:var(--gold);text-decoration:none}
+a:hover{color:var(--vermilion)}
 .wrap{max-width:1320px;margin:0 auto;padding:34px 22px 90px}
 
 header{display:flex;align-items:center;justify-content:space-between;gap:20px;
   flex-wrap:wrap;border-bottom:1px solid var(--rule);padding-bottom:16px;margin-bottom:26px}
-h1{margin:0;font-size:clamp(36px,7vw,68px);line-height:.9;font-weight:600;letter-spacing:-.03em}
-h1 span{color:var(--gold)}
+.brandlink{text-decoration:none;color:inherit;display:inline-block}
+.brandlink:hover,.brandlink:focus,.brandlink:active,
+.brandlink:hover .brand-title,.brandlink:hover .brand-title span,
+.brandlink:hover h1,.brandlink:hover h1 span{color:inherit;text-decoration:none}
+.brandlink:hover .brand-title span,.brandlink:hover h1 span{color:var(--gold)}
+.brandlink:focus-visible{outline:2px solid var(--slate);outline-offset:4px}
+.brand-title,h1{margin:0;font-size:clamp(36px,7vw,68px);line-height:.9;font-weight:600;letter-spacing:-.03em}
+.brand-title span,h1 span{color:var(--gold)}
 .tag{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11px;
   letter-spacing:.2em;text-transform:uppercase;color:var(--dim);margin-top:12px}
+/* Page title under the header rule, above body copy */
+.pagetitle{margin:0 0 18px;font-size:clamp(28px,5vw,44px);line-height:1.05;
+  font-weight:600;letter-spacing:-.02em;color:var(--paper)}
+.article > .pagetitle:first-child{margin-top:0}
 /* nav sits up on the title line, buttons pushed to the right */
 header .navbtns{width:auto;margin:0;justify-content:flex-end}
 
@@ -50,6 +62,13 @@ select:focus,input:focus,textarea:focus{outline:none;border-color:var(--gold)}
 .runtitle-input{margin-top:10px;font-size:12px;padding:7px 9px}
 .whitespace .two{margin-top:10px}
 .whitespace .two label{margin-top:0;font-size:12px}
+.printer label{margin-top:10px}
+.printer label:first-of-type{margin-top:0}
+.paperdims{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}
+.paperdims input{width:88px;flex:0 0 auto;margin:0}
+.paperdims .paperx{color:var(--dim);font-size:13px}
+.paperdims .paperunit{font-size:12px;color:var(--dim);white-space:nowrap}
+.printer input:disabled{opacity:.45}
 .whitespace .hint{margin:0 0 4px}
 
 button{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;
@@ -128,7 +147,7 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
 .hero{display:grid;grid-template-columns:1fr minmax(160px,280px);gap:28px;
   align-items:center;margin:0 0 12px;max-width:none;text-align:left}
 .lede{font-size:clamp(16px,2.2vw,20px);line-height:1.6;color:var(--paper);margin:0}
-.lede em{color:var(--gold);font-style:normal}
+.lede em{color:var(--paper);font-style:normal}
 .lede a,.panel a,.hint a{color:var(--gold);text-decoration:none}
 .lede a:hover,.panel a:hover,.hint a:hover{color:var(--vermilion)}
 .hero-guide{margin:0 0 28px;font-size:15px;line-height:1.5;color:var(--dim)}
@@ -137,14 +156,15 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
 .hero-img{width:100%;height:auto;display:block;object-fit:cover;
   border:1px solid var(--rule);box-shadow:0 2px 10px rgba(0,0,0,.35)}
 @media(max-width:700px){.hero{grid-template-columns:1fr}.hero-img{max-width:320px}}
-.article em{color:var(--gold);font-style:normal}
 .navbtns{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;width:100%}
 .btnlink{display:inline-block;text-decoration:none;
   font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.14em;
   text-transform:uppercase;padding:12px 22px;border:1px solid var(--gold);
   background:transparent;color:var(--gold);font-weight:600;transition:background .15s,color .15s}
 .btnlink.ghost{background:transparent;color:var(--gold)}
-.btnlink:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
+.btnlink:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff;text-decoration:none}
+.btnlink[aria-current="page"]{background:var(--gold);color:var(--ink)}
+.btnlink[aria-current="page"]:hover{background:var(--vermilion);border-color:var(--vermilion);color:#fff}
 .btnlink:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
 
 /* shared centered site nav on every page */
@@ -162,11 +182,13 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
 .article h2{font-size:clamp(22px,4vw,32px);font-weight:600;letter-spacing:-.01em;
   color:var(--paper);margin:38px 0 12px;scroll-margin-top:24px}
 .article h2:first-child{margin-top:0}
-.article h2 span{color:var(--gold)}
+.article h2 span{color:var(--paper)}
 .article h3{font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--gold);margin:26px 0 10px}
 .article p{margin:0 0 16px;line-height:1.65}
-.article a{color:var(--gold)}
+.article a{color:var(--gold);text-decoration:none}
+.article a:hover{color:var(--vermilion)}
+.article em,.lede em{color:var(--paper);font-style:normal}
 
 /* numbered step cards for the guide */
 .steps{list-style:none;counter-reset:step;padding:0;margin:0 0 20px}
@@ -207,15 +229,15 @@ button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
   padding:15px 18px;margin-bottom:12px}
 .reslist li b{color:var(--paper);display:block;margin-bottom:3px}
 .reslist li span{font-size:14px;color:var(--dim)}
-.reslist li a{text-decoration:none;display:block}
-.reslist li a b{color:var(--gold)}
-.reslist li a:hover b{color:var(--vermilion)}
+.reslist li a{text-decoration:none;display:block;color:var(--gold)}
+.reslist li a b{color:inherit}
+.reslist li a:hover,.reslist li a:hover b{color:var(--vermilion)}
 .reslist li:hover{border-color:var(--gold)}
 
 /* callout / tip */
 .callout{border-left:3px solid var(--gold);background:rgba(201,162,39,.08);
   padding:14px 18px;margin:0 0 22px;font-size:15px}
-.callout b{color:var(--gold)}
+.callout b{color:var(--paper)}
 
 /* ---- about: timeline + people ---- */
 .timeline{list-style:none;padding:0;margin:8px 0 26px;border-left:1px solid var(--rule)}
@@ -262,6 +284,9 @@ footer.credit{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px;
 .sitefoot .footlogo img{max-width:100%;max-height:100%;display:block}
 .sitefoot .footaddr{font-style:normal;font-size:14px;line-height:1.75;color:var(--paper)}
 .sitefoot .footaddr b{color:var(--gold);font-weight:600}
+.sitefoot .footaddr a{color:var(--gold);text-decoration:none}
+.sitefoot .footaddr a:hover{color:var(--vermilion)}
+.sitefoot .footaddr a b{color:inherit}
 /* licence + copyright strip, centred under the main row */
 .sitefoot .footlic{display:flex;flex-direction:column;align-items:center;gap:12px;
   margin-top:24px;padding-top:22px;border-top:1px solid var(--rule)}
@@ -292,10 +317,9 @@ footer.credit{border-top:1px solid var(--rule);margin-top:40px;padding-top:18px;
   body{background:#fff}
   .wrap{display:none}
   #out{display:block}
-  @page{size:A4 landscape;margin:0}
-  html,body{width:297mm;height:210mm}
-  .psheet{page-break-after:always;break-after:page;display:grid;
-    width:297mm;height:210mm;overflow:hidden}
+  /* Sheet size is injected by buildPrint() via #printSheetStyle */
+  @page{margin:0}
+  .psheet{page-break-after:always;break-after:page;display:grid;overflow:hidden}
   /* Geometry is set inline by panelStyles() — keep CSS from fighting those sizes */
   .pcell{background:#fff;color:#2a2620;border:0;
     box-shadow:inset 0 0 0 1px #ccc}

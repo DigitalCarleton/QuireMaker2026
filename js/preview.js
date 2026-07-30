@@ -2,6 +2,7 @@
 
 import { FORMATS } from "./imposition.js";
 import { PW, PH, setPanelSize, splitPages, verifyWordIntegrity, panelStyles, wordsFromHtml } from "./pagination.js";
+import { readPaperUI } from "./paper.js";
 
 const $ = i => document.getElementById(i);
 const escHtml = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
@@ -199,7 +200,8 @@ export function compose(){
   const raw=$("txt").value;
   const per=im.leaves*2;
   const o=panelOpts();
-  setPanelSize(297/im.C, 210/im.R);
+  const sheet=readPaperUI();
+  setPanelSize(sheet.w/im.C, sheet.h/im.R);
   const pages=splitPages(raw,$("para").checked,per,pt,fam,geomOpts(o));
 
   // Pages must form whole gatherings; pad only happens inside splitPages.
@@ -211,7 +213,7 @@ export function compose(){
   }
 
   const nG=pages.length/per;
-  LAST={pages, im, sig, pt, fam, nG, raw, opts:o};
+  LAST={pages, im, sig, pt, fam, nG, raw, opts:o, sheet};
   return LAST;
 }
 
