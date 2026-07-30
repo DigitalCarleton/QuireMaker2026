@@ -4,7 +4,6 @@ Watch a sheet of paper fold into a book.
 
 QuireMaker is a free browser tool for students learning how early books were made. You paste in some text, pick a format (folio, quarto, octavo, or sextodecimo), and the tool lays your words onto printer sheets the way a hand-press printer would. Then you can print those sheets, fold them, and hold a real little gathering in your hands.
 
-No install. No account. Just open it and try.
 
 ---
 
