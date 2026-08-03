@@ -78,7 +78,7 @@ button:disabled{opacity:.3;cursor:default}
 button:focus-visible{outline:2px solid var(--slate);outline-offset:3px}
 .acts{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
 
-/* fold theatre */
+/* fold visual tool */
 .stagebox{border:1px solid var(--rule);background:rgba(0,0,0,.28);padding:20px 18px 16px;margin-bottom:26px;overflow:hidden}
 .formula{font-family:ui-monospace,Menlo,monospace;font-size:16px;color:var(--gold);margin:0 0 12px}
 .formula small{color:var(--dim);font-size:11px;letter-spacing:.1em;text-transform:uppercase;margin-left:10px}
