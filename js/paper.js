@@ -1,15 +1,10 @@
 "use strict";
 
-/* Paper sizes for the printer sheet. Dimensions are stored as portrait
-   short × long in millimetres (same convention as the labels in the UI).
-   QuireMaker lays formes on a landscape sheet, so getSheetMm() swaps to
-   long × short for the printed page. */
-
+/* paper sizes (portrait mm) + unit helpers */
 const MM_PER_IN = 25.4;
 const PT_PER_IN = 72;
 const MM_PER_PT = MM_PER_IN / PT_PER_IN;
 
-/* Portrait width × height in mm */
 export const PAPER_SIZES = [
   {id:"LETTER",    w:215.9,  h:279.4},
   {id:"NOTE",      w:190.5,  h:254.0},
@@ -90,18 +85,16 @@ export function findPaper(id){
   return PAPER_SIZES.find(p=>p.id===id) || PAPER_SIZES.find(p=>p.id==="A4");
 }
 
-/* Landscape sheet size in mm for imposition (long edge horizontal). */
+/* landscape sheet for printing (long edge horizontal) */
 export function getSheetMm(paperId, customWunit, customHunit, unit){
   if(paperId==="CUSTOM"){
     let w=unitToMm(customWunit, unit);
     let h=unitToMm(customHunit, unit);
-    // Keep a usable minimum so panels don't collapse.
     if(!(w>10)) w=210;
     if(!(h>10)) h=297;
     return {w, h};
   }
   const p=findPaper(paperId);
-  // Portrait short×long → landscape long×short (matches prior A4 297×210)
   return {w:Math.max(p.w,p.h), h:Math.min(p.w,p.h)};
 }
 
@@ -151,8 +144,7 @@ export function syncCustomEnabled(){
   });
 }
 
-/* When the display unit changes, convert CUSTOM field values so the
-   physical size stays the same. */
+/* keep CUSTOM physical size when the display unit changes */
 export function convertCustomFields(fromUnit, toUnit){
   if(fromUnit===toUnit) return;
   const w=$("paperW"), h=$("paperH");
@@ -167,7 +159,6 @@ export function convertCustomFields(fromUnit, toUnit){
 export function initPaperUI(){
   const unitSel=$("paperUnit");
   if(unitSel && !unitSel.value) unitSel.value="cm";
-  // Sensible CUSTOM default ≈ A4 portrait in the current unit
   if($("paperW") && !$("paperW").value){
     const u=unitSel?unitSel.value:"cm";
     $("paperW").value=fmtDim(210, u);

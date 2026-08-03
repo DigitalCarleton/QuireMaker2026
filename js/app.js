@@ -17,21 +17,20 @@ function refreshAfterPaperChange(){
   if(LAST){ compose(); renderPreview(); }
 }
 
-/* wiring  */
 function reload(){
   T.key=$("fmt").value; T.im=impose(T.key); T.step=0; T.back=false;
   buildScene(); drawFormes();
-  if(LAST){ compose(); renderPreview(); }   // keep preview in sync with format
+  if(LAST){ compose(); renderPreview(); }
 }
 $("fmt").onchange=reload;
 $("sig").oninput=()=>{ drawFormes(); if(LAST){compose();renderPreview();} };
 
-// Live update when any page-furniture / type option changes.
+// live updates for page furniture / type
 ["pgnum","sigmark","catch","para","face","runtitle","restartpg"].forEach(id=>{
   const el=$(id);
   if(el) el.addEventListener("change",()=>{ if(LAST){ compose(); renderPreview(); } });
 });
-// Size field: free entry, but hard-capped at 20 so pages never blow up.
+// font size capped at 20
 if($("fs")){
   $("fs").addEventListener("input",()=>{
     const el=$("fs");
@@ -48,7 +47,7 @@ if($("fs")){
     if(LAST){ compose(); renderPreview(); }
   });
 }
-// White-space margins: live update, clamp 0–48 pt
+// margins 0–48 pt
 ["mBind","mFore","mTop","mBot"].forEach(id=>{
   const el=$(id);
   if(!el) return;
@@ -65,10 +64,9 @@ if($("fs")){
   });
   el.addEventListener("change",()=>{ clamp(); if(LAST){ compose(); renderPreview(); } });
 });
-// Typing a running title updates the preview live.
 if($("runtitletext")) $("runtitletext").addEventListener("input",()=>{ if(LAST){ compose(); renderPreview(); } });
 
-// Printer: paper size, display unit, custom dimensions
+// paper size UI
 initPaperUI();
 if($("paper")){
   $("paper").addEventListener("change",()=>{
@@ -106,8 +104,7 @@ $("go").onclick=()=>{
   $("book").scrollIntoView({behavior:"smooth",block:"nearest"});
 };
 $("pr").onclick=()=>{
-  // Always re-compose from the current textarea so Print never uses stale pages.
-  const data=compose();
+  const data=compose(); // recompose so print isn't stale
   renderPreview();
   const info=buildPrint(data);
   if(info.pages!==data.pages.length || info.nG!==data.nG){
@@ -133,8 +130,7 @@ These reflections have dispelled the agitation with which I began my letter, and
 
 You may remember that a history of all the voyages made for purposes of discovery composed the whole of our good uncle Thomas's library. My education was neglected, yet I was passionately fond of reading. These volumes were my study day and night, and my familiarity with them increased that regret which I had felt, as a child, on learning that my father's dying injunction had forbidden my uncle to allow me to embark in a seafaring life.`;
 
-// The passage above is only a sample: show it greyed, and wipe it the first time
-// a student clicks into the box so they can drop in their own text.
+// sample text clears on first focus
 $("txt").classList.add("is-sample");
 $("txt").addEventListener("focus",()=>{
   const t=$("txt");
@@ -146,4 +142,4 @@ $("txt").addEventListener("focus",()=>{
 },{once:true});
 
 reload();
-compose(); renderPreview();   // show pages on first load
+compose(); renderPreview();

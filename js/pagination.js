@@ -1,7 +1,7 @@
 "use strict";
 
-/* ===== text flow / pagination (canvas-measured, robust) ===== */
-export let PW=74.25, PH=105; // octavo panel mm defaults; never 0
+/* pagination + panel geometry */
+export let PW=74.25, PH=105; // panel size in mm
 
 export function setPanelSize(w,h){
   const ww=Number(w), hh=Number(h);
@@ -9,7 +9,7 @@ export function setPanelSize(w,h){
   if(hh>1) PH=hh;
 }
 
-const MM=3.77953;                 // px per mm at 96dpi
+const MM=3.77953; // px per mm
 const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 
 export function wordsOf(text){
@@ -36,12 +36,10 @@ export function verifyWordIntegrity(raw,pageHtmls){
 }
 
 function renderParas(a, keep){
-  // Continuous copy (breaks off): one flush block, no fake paragraph spacing.
+  // continuous copy when paragraph breaks are off
   if(!keep){
     return `<p style="margin:0;text-indent:0">`+esc(a.join(' '))+'</p>';
   }
-  // Breaks on: indent each new para; margin only BETWEEN paras (not after the last),
-  // so the bottom of the page isn't eaten by an unbudgeted .5em gap.
   return a.map((t,i)=>{
     const margin = i < a.length-1 ? '0 0 .5em' : '0';
     const indent = i ? '1.2em' : '0';
@@ -54,8 +52,6 @@ function padToGatherings(pages,per){
   return out;
 }
 
-/* Normalize the panel options. Accepts a legacy boolean (folio marks on/off)
-   or an object {folioMarks, catchwords}. */
 function normOpts(o){
   if(o===true||o===false||o==null){
     return {folioMarks:!!o, pageNums:!!o, catchwords:false, runningTitle:false,
@@ -63,10 +59,8 @@ function normOpts(o){
   }
   const clampM = v => Math.min(48, Math.max(0, Number(v)||0));
   return {
-    // folioMarks = signature strip at the bottom (moves with margins)
-    folioMarks:!!o.folioMarks,
-    // pageNums = fixed top-right page number (does NOT move with margins)
-    pageNums:!!o.pageNums,
+    folioMarks:!!o.folioMarks, // signature at bottom
+    pageNums:!!o.pageNums,     // page number top-right
     catchwords:!!o.catchwords,
     runningTitle:!!o.runningTitle,
     marginBind:clampM(o.marginBind),
@@ -76,20 +70,8 @@ function normOpts(o){
   };
 }
 
-const PT_PX = 96/72; // CSS px per typographic point at 96dpi
+const PT_PX = 96/72; // pt → px
 
-/* Single source of truth for panel geometry (px).
-   Bottom of the panel, below the text area, can carry two fixed strips:
-     - a catchword strip (body size, right aligned)   [catchH]
-     - a signature strip (moves with margins)         [folioH]
-   Page numbers sit absolutely at the top-right of the page cell and do
-   not consume the margin-aware text box (they stay put when margins change).
-   White-space margins (pt) shrink the text block; binding/fore-edge
-   swap on recto vs verso but the usable width stays the same.
-
-   On tiny sheets (e.g. B10), insets and furniture shrink with the panel so
-   the text box never claims more pixels than the cell actually has — that
-   was clipping mid-word in the preview. */
 export function panelMetrics(pt,opts){
   const o=normOpts(opts);
   const {folioMarks,catchwords,runningTitle}=o;
@@ -97,8 +79,7 @@ export function panelMetrics(pt,opts){
   const pw=(PW>1)?PW:74.25, ph=(PH>1)?PH:105;
   const cellW=Math.max(8, pw*MM), cellH=Math.max(8, ph*MM);
 
-  // Default inset ~6mm on normal pages; shrink on small panels so padding
-  // cannot eat the whole cell.
+  // shrink insets on tiny sheets so content still fits
   const baseIdeal=6*MM;
   const base=Math.max(1.5, Math.min(baseIdeal, cellW*0.08, cellH*0.08));
 
@@ -107,7 +88,7 @@ export function panelMetrics(pt,opts){
   let topPx=o.marginTop*PT_PX;
   let botPx=o.marginBot*PT_PX;
 
-  // Cap total padding so at least ~45% of the cell remains for content.
+  // don't let margins eat the whole page
   const maxPadX=cellW*0.55, maxPadY=cellH*0.55;
   let padX=base*2+bindPx+forePx;
   let padY=base*2+topPx+botPx;
@@ -122,12 +103,10 @@ export function panelMetrics(pt,opts){
     padY=base*2+topPx+botPx;
   }
 
-  // NEVER inflate past the real cell — that caused overflow clipping.
   const innerW=Math.max(4, cellW-padX);
   const innerH=Math.max(4, cellH-padY);
 
-  // Keep the user's size when it fits; otherwise shrink so a short word can
-  // sit on a line (preview + pagination stay in sync).
+  // auto-shrink type if the panel is too small for the requested size
   const maxPtForWidth=Math.max(3, (innerW/4)/PT_PX);
   const maxPtForHeight=Math.max(3, (innerH/3.2)/PT_PX);
   const effSize=Math.min(size, maxPtForWidth, maxPtForHeight);
@@ -140,7 +119,6 @@ export function panelMetrics(pt,opts){
   const runLineH=effSize*1.3333*1.2;
   let runH=runningTitle ? Math.min(2*MM+runLineH, innerH*0.22) : 0;
 
-  // Prefer giving the text block the majority of the inner area.
   let textAreaH=innerH-folioH-catchH-runH;
   if(textAreaH<lineH && (folioH+catchH+runH)>0){
     const furniture=folioH+catchH+runH;
@@ -161,20 +139,17 @@ export function panelMetrics(pt,opts){
 }
 
 function cssFontFamily(fam){
-  // Keep a usable CSS font-family list; normalize smart quotes / leftover doubles.
   return String(fam||"Georgia, serif")
     .replace(/[“”]/g,'"')
     .replace(/"/g,"'")
     .trim() || "Georgia, serif";
 }
 
-/* side: "r" (recto/odd) or "v" (verso/even). Binding sits toward the spine. */
+/* side "r" = recto, "v" = verso (binding swaps sides) */
 export function panelStyles(pt,fam,opts,side="r"){
   const m=panelMetrics(pt,opts);
-  const size=m.size; // may be auto-shrunk on tiny panels
+  const size=m.size;
   const font=`font-family:${cssFontFamily(fam)};font-size:${size}pt;line-height:1.42`;
-  // Recto: spine on the left → binding left, fore-edge right
-  // Verso: spine on the right → fore-edge left, binding right
   const padL = m.base + (side==="v" ? m.forePx : m.bindPx);
   const padR = m.base + (side==="v" ? m.bindPx : m.forePx);
   const padT = m.base + m.topPx;
@@ -185,11 +160,9 @@ export function panelStyles(pt,fam,opts,side="r"){
     cell:`width:${m.cellW}px;height:${m.cellH}px;position:relative;`+
       `padding:${padT}px ${padR}px ${padB}px ${padL}px;box-sizing:border-box;`+
       `display:flex;flex-direction:column;overflow:hidden;${font}`,
-    /* page number: fixed to the page cell's top-right — ignores margin padding */
     pnum:`position:absolute;top:${Math.max(2, m.base*0.35)}px;right:${Math.max(2, m.base*0.4)}px;`+
       `margin:0;padding:0;z-index:2;pointer-events:none;`+
       `font-family:${cssFontFamily(fam)};font-size:${pnumPt}pt;line-height:1;color:#555`,
-    /* running-title strip: sits at the very top of the text block, centred italic */
     run:`width:${m.innerW}px;height:${m.runH}px;flex:0 0 ${m.runH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-start;justify-content:center;`+
@@ -199,12 +172,10 @@ export function panelStyles(pt,fam,opts,side="r"){
       `max-height:${m.textAreaH}px;box-sizing:border-box;overflow:hidden;`+
       `text-align:justify;hyphens:none;-webkit-hyphens:none;`+
       `overflow-wrap:anywhere;word-break:break-word;${font}`,
-    /* catchword strip: sits just under the text, aligned to the right edge */
     catch:`width:${m.innerW}px;height:${m.catchH}px;flex:0 0 ${m.catchH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-end;justify-content:flex-end;`+
       `color:#2a2620;${font}`,
-    /* signature strip at the bottom (moves with margins) */
     folio:`width:${m.innerW}px;height:${m.folioH}px;flex:0 0 ${m.folioH}px;`+
       `box-sizing:border-box;margin:0;padding:0;overflow:hidden;`+
       `display:flex;align-items:flex-end;justify-content:center;`+
@@ -212,9 +183,7 @@ export function panelStyles(pt,fam,opts,side="r"){
   };
 }
 
-/* How many chars fit on one line — measure with a real DOM node using the
-   same font-family / font-size as the page, so pagination matches what you see.
-   (Canvas font strings often mis-parse multi-family stacks and then under/over-fill.) */
+/* measure average char width in the real font */
 function charsPerLine(pt,fam,innerWpx){
   const size=Math.min(20, Math.max(1, Number(pt)||9.2));
   const sample="abcdefghijklmnopqrstuvwxyz abcdefghijklmnopqrstuvwxyz ";
@@ -232,7 +201,6 @@ function charsPerLine(pt,fam,innerWpx){
   return Math.max(4, Math.floor(innerWpx/avg));
 }
 
-/* How many visual lines a set of words wraps into, at cpl chars per line. */
 function wrapLines(words,cpl){
   let lines=1, len=0;
   for(const w of words){
@@ -247,11 +215,7 @@ export function splitPagesFallback(paras,per,pt,opts){
   return splitPages(paras.join('\n\n'), true, per, pt, 'Georgia,serif', opts);
 }
 
-/*
- * Line-budget pagination. Computes lines-per-page from geometry and
- * chars-per-line from canvas, then fills each page to capacity.
- * Never one word per page; never drops a word.
- */
+/* fill pages by line budget; never drop a word */
 export function splitPages(raw,keep,per,pt,fam,opts){
   const paras=keep
     ? String(raw).split(/\n\s*\n/).map(s=>s.replace(/\s+/g,' ').trim()).filter(Boolean)
@@ -270,11 +234,8 @@ export function splitPages(raw,keep,per,pt,fam,opts){
   for(const para of paras){
     const words=para.split(/\s+/).filter(Boolean);
     let start=0;
-    // True once any of THIS logical paragraph has been placed on the current page.
-    // Prevents leftover room from spawning a fake indented "new paragraph".
-    let onPage=false;
+    let onPage=false; // already started this paragraph on the current page
     while(start<words.length){
-      // Charge a gap only when a NEW logical paragraph begins on a page that already has copy.
       const gap=(curParas.length && !onPage)?1:0;
       const room=Math.max(0, maxLines-curLines-gap);
       if(room<=0){ commit(); onPage=false; continue; }
@@ -285,11 +246,10 @@ export function splitPages(raw,keep,per,pt,fam,opts){
         taken=trial; end++;
       }
       if(taken.length===0){
-        if(curParas.length){ commit(); onPage=false; continue; }  // no room, new page
-        taken=[words[start]]; end=start+1;                      // force one word on empty page
+        if(curParas.length){ commit(); onPage=false; continue; }
+        taken=[words[start]]; end=start+1; // force at least one word
       }
       if(onPage){
-        // Same paragraph, same page: append — do not start a new <p>.
         curParas[curParas.length-1]+=' '+taken.join(' ');
         curLines+=wrapLines(taken,cpl);
       }else{

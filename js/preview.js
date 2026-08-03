@@ -7,16 +7,14 @@ import { readPaperUI } from "./paper.js";
 const $ = i => document.getElementById(i);
 const escHtml = s => String(s).replace(/[&<>]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
-/* Read the page-furniture toggles into one options object. */
+/* read UI toggles / margins */
 export function panelOpts(){
   const pgOn  = $("pgnum")   ? $("pgnum").checked   : true;
   const sigOn = $("sigmark") ? $("sigmark").checked : true;
   const catchOn = $("catch") ? $("catch").checked   : false;
   const runOn = $("runtitle") ? $("runtitle").checked : false;
   const runText = $("runtitletext") ? $("runtitletext").value.trim() : "";
-  // running title only reserves space / shows when it is ticked AND has text
-  const runningTitle = runOn && !!runText;
-  // restart page numbers at 1 in every gathering (display only; content unchanged)
+  const runningTitle = runOn && !!runText; // need both the checkbox and some text
   const restartNum = $("restartpg") ? $("restartpg").checked : false;
   const readM = id => {
     const el=$(id);
@@ -25,13 +23,12 @@ export function panelOpts(){
     return Number.isFinite(v) ? Math.min(48, Math.max(0, v)) : 0;
   };
   return {pgOn, sigOn, catchOn, runOn, runText, runningTitle, restartNum,
-          // bottom signature strip moves with margins; page numbers are fixed top-right
           folioMarks: sigOn, pageNums: pgOn, catchwords: catchOn,
           marginBind:readM("mBind"), marginFore:readM("mFore"),
           marginTop:readM("mTop"), marginBot:readM("mBot")};
 }
 
-/* Options that affect panel geometry / pagination. */
+/* subset of opts that change page geometry */
 function geomOpts(o){
   return {
     folioMarks:o.folioMarks, pageNums:o.pageNums,
@@ -40,24 +37,18 @@ function geomOpts(o){
     marginTop:o.marginTop, marginBot:o.marginBot
   };
 }
-/* First word of a page (for the catchword on the previous page). */
 function firstWordOf(html){ return wordsFromHtml(html)[0] || ""; }
 
-/* fold theatre — fixed centered stage
-   The stack of panels always stays centered. Panels have a fixed leaf
-   size; each panel is placed relative to the stack CENTER, so as the
-   sheet folds down the footprint shrinks toward the middle and never
-   drifts out of frame. Works identically for every format, forward
-   and backward. */
-const LW=88, LH=116, GAP=1;   // one leaf, on screen
+/* fold theatre — leaf size on screen */
+const LW=88, LH=116, GAP=1;
 
 export const T={step:0, back:false, key:"octavo", im:null};
 
 function stackScale(){
-  // shrink so the FLAT sheet (the widest state) fits the stage with margin
+  // fit the flat sheet inside the stage
   const im=T.im;
   const flatW = im.C*(LW+GAP), flatH = im.R*(LH+GAP);
-  const availW = 560, availH = 300;   // stage inner box
+  const availW = 560, availH = 300;
   return Math.min(1, availW/flatW, availH/flatH);
 }
 export function applyStackTransform(){
@@ -85,7 +76,6 @@ export function layout(){
   const im=T.im, folds=im.folds.slice(0,T.step);
   const stepW=LW+GAP, stepH=LH+GAP;
   const fullyFolded = T.step===im.folds.length;
-  // Map sheet cell -> leaf index in the finished gathering (0 = outermost = pages 1/2)
   const leafByCell = Object.create(null);
   if(im.leafOrder){
     for(const L of im.leafOrder) leafByCell[L.r+","+L.c] = L;
@@ -93,8 +83,7 @@ export function layout(){
 
   document.querySelectorAll(".pc").forEach(el=>{
     const r0=+el.dataset.r, c0=+el.dataset.c;
-    // live footprint bookkeeping
-    let w=im.C, h=im.R, ox=0, oy=0;   // origin (top-left cell index) of live footprint
+    let w=im.C, h=im.R, ox=0, oy=0;
     let ry=0, rx=0, depth=0;
     let landCol=c0, landRow=r0;
 
@@ -103,19 +92,17 @@ export function layout(){
         const nw=w/2, loc=landCol-ox;
         const moving = dir==="LR" ? loc<nw : loc>=nw;
         if(moving){ landCol = ox + (w-1-loc); ry+=180; depth++; }
-        if(dir==="LR") ox+=nw;        // survivors occupy the right half
+        if(dir==="LR") ox+=nw;
         w=nw;
       }else{
         const nh=h/2, loc=landRow-oy;
         const moving = dir==="TB" ? loc<nh : loc>=nh;
         if(moving){ landRow = oy + (h-1-loc); rx+=180; depth++; }
-        if(dir==="TB") oy+=nh;        // survivors occupy the bottom half
+        if(dir==="TB") oy+=nh;
         h=nh;
       }
     }
-    // final footprint is w x h cells, its top-left at (ox,oy).
-    // Center that footprint in the stage: place landing cell relative to footprint centre.
-    const fcx = ox + w/2 - 0.5;       // centre column of live footprint
+    const fcx = ox + w/2 - 0.5;
     const fcy = oy + h/2 - 0.5;
     const x = (landCol - fcx)*stepW;
     const y = (landRow - fcy)*stepH;
@@ -124,22 +111,16 @@ export function layout(){
     el.style.marginLeft = (-LW/2)+"px";
     el.style.marginTop  = (-LH/2)+"px";
 
-    /* Fully folded: restack in true gathering order so the outside front is page 1
-       and Turn over shows the outside back (last page), not a random inner leaf.
-       Page 1 lives on the BACK face of the outermost sheet cell, so that leaf is
-       spun 180° around Y to face the viewer. */
+    // when fully folded, stack leaves so page 1 faces out
     if(fullyFolded && leafByCell[r0+","+c0]){
       const L = leafByCell[r0+","+c0];
-      const z = 20 + (im.leaves - L.leaf);   // leaf 0 on top (toward viewer)
-      // face==="back" => odd page is on the .lbl.bk side of this panel
+      const z = 20 + (im.leaves - L.leaf);
       const oddOnBack = L.face === "back";
       let fry = ry, frx = rx;
       if(L.leaf === 0){
-        // Outside front = page 1 toward viewer
         fry = oddOnBack ? 180 : 0;
         frx = 0;
       }else if(L.leaf === im.leaves - 1){
-        // Outside back = last page facing away; Turn over brings it forward
         fry = oddOnBack ? 180 : 0;
         frx = 0;
       }
@@ -163,7 +144,7 @@ export function layout(){
   $("fwd").disabled=T.step===n;
 }
 
-/*  forme maps  */
+/* outer / inner forme maps */
 export function drawFormes(){
   const im=T.im, sig=($("sig").value||"A").trim(), f=FORMATS[T.key];
   $("fx").innerHTML=`${f.sym}: ${sig}<sup>${im.leaves}</sup>`
@@ -171,8 +152,7 @@ export function drawFormes(){
   const g=(side,title,mk)=>{
     let h=`<div class="forme"><h3><b>${mk}</b> ${title}</h3>`
       +`<div class="sheet" style="grid-template-columns:repeat(${im.C},1fr)">`;
-    // data-leaf groups the two pages of one physical leaf (recto + verso),
-    // which sit on opposite formes — clicking spotlights the whole leaf.
+    // data-leaf ties recto+verso so a click highlights both
     for(const row of side)for(const cl of row)
       h+=`<div class="cell${cl.rot?" rot":""}" data-p="${cl.page}" data-leaf="${Math.ceil(cl.page/2)}">`
        +`<span class="num">${cl.page}</span>`
@@ -185,14 +165,12 @@ export function drawFormes(){
     el.onclick=()=>{
       const leaf=el.dataset.leaf, on=el.classList.contains("hi");
       document.querySelectorAll(".cell").forEach(x=>x.classList.remove("hi"));
-      // highlight both pages of this leaf, so it lights up across both formes
       if(!on) document.querySelectorAll(`.cell[data-leaf="${leaf}"]`).forEach(x=>x.classList.add("hi"));
     };
   });
 }
 
-/*  live on-screen preview  */
-export let LAST=null;   // {pages, im, sig, pt, fam, nG}
+export let LAST=null; // last compose() result
 
 export function compose(){
   const im=T.im, pt=Math.min(20, Math.max(1, parseFloat($("fs").value)||9.2)), fam=$("face").value;
@@ -204,7 +182,6 @@ export function compose(){
   setPanelSize(sheet.w/im.C, sheet.h/im.R);
   const pages=splitPages(raw,$("para").checked,per,pt,fam,geomOpts(o));
 
-  // Pages must form whole gatherings; pad only happens inside splitPages.
   if(pages.length%per!==0){
     console.error("[Quire Maker] Page count "+pages.length+" is not a multiple of gathering size "+per);
   }
@@ -227,10 +204,8 @@ export function renderPreview(){
     + (blanks?` \u00b7 ${blanks} blank (text ran short of a full gathering)`:``)
     + ` \u00b7 reads 1 \u2192 ${pages.length}`;
 
-  // Identical panel geometry to measure + print (panelStyles).
   const o=panelOpts();
   const gOpts=geomOpts(o);
-  // Precompute recto + verso styles (binding/fore-edge swap)
   const Sr=panelStyles(pt, fam, gOpts, "r");
   const Sv=panelStyles(pt, fam, gOpts, "v");
 
@@ -245,25 +220,21 @@ export function renderPreview(){
       const S=side==="r"?Sr:Sv;
       const blank = !body.trim();
 
-      // catchword = first word of the NEXT page, in brackets, bottom-right
       const cwWord = o.catchOn ? firstWordOf(pages[n]) : "";
       const catchEl = o.catchOn
         ? `<div class="catch" style="${S.catch}">${cwWord?("["+escHtml(cwWord)+"]"):""}</div>`
         : ``;
 
-      // signature at the bottom (moves with margins)
       const foot = o.sigOn
         ? `<div class="foot" style="${S.folio}">`+
             `<span class="corner">${sig}${g+1}.${leaf}${side}</span></div>`
         : ``;
 
-      // page number: fixed top-right of the page cell (does not move with margins)
       const shownNum = o.restartNum ? (p+1) : n;
       const pnumEl = o.pgOn
         ? `<div class="pnum" style="${S.pnum}">${shownNum}</div>`
         : ``;
 
-      // running title: reserved on every page, printed only from page 2 on non-blank pages
       const runEl = o.runningTitle
         ? `<div class="run" style="${S.run}">${(n>=2 && !blank)?escHtml(o.runText):""}</div>`
         : ``;
@@ -280,11 +251,11 @@ export function renderPreview(){
   }
   book.innerHTML=html;
 
-  // scale each true-size (mm) leaf down to its grid cell, preserving fill proportion
+  // scale true-size leaves down to fit the grid cells
   requestAnimationFrame(()=>{
     document.querySelectorAll(".leaf").forEach(leaf=>{
       const frame=leaf.querySelector(".leafframe");
-      const w=frame.getBoundingClientRect().width;   // real rendered mm width in px
+      const w=frame.getBoundingClientRect().width;
       const cellW=leaf.clientWidth;
       const scale=cellW/w;
       const h=frame.getBoundingClientRect().height;

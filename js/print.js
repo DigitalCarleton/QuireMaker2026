@@ -17,6 +17,7 @@ function geomOpts(o){
   };
 }
 
+/* inject @page size for the chosen paper */
 function applyPrintSheetSize(wMm, hMm){
   let style=document.getElementById("printSheetStyle");
   if(!style){
@@ -34,7 +35,7 @@ function applyPrintSheetSize(wMm, hMm){
     }`;
 }
 
-/* print sheets — identical panel geometry to the measure panel via panelStyles() */
+/* build printable sheets (same geometry as the preview) */
 export function buildPrint(data){
   const src=data||LAST;
   if(!src){
@@ -70,30 +71,25 @@ export function buildPrint(data){
         const rv=cl.page%2?"r":"v";
         const S=rv==="r"?Sr:Sv;
 
-        // catchword = first word of the NEXT page (reading order), bracketed
         const cwWord = o.catchwords ? firstWordOf(pages[abs]) : "";
         const catchEl = o.catchwords
           ? `<div class="pcatch" style="${S.catch}">${cwWord?("["+escHtml(cwWord)+"]"):""}</div>`
           : ``;
 
-        // signature at the bottom (moves with margins)
         const foot = o.sigOn
           ? `<div class="pfol" style="${S.folio}">`+
               `<span>${sig}${g+1}.${leaf}${rv}</span></div>`
           : ``;
 
-        // page number: fixed top-right of the page cell (does not move with margins)
         const shownNum = o.restartNum ? cl.page : abs;
         const pnumEl = o.pgOn
           ? `<div class="ppnum" style="${S.pnum}">${shownNum}</div>`
           : ``;
 
-        // running title: reserved on every page, printed only from page 2 on non-blank pages
         const runEl = o.runningTitle
           ? `<div class="prun" style="${S.run}">${(abs>=2 && (pages[abs-1]||"").trim())?escHtml(o.runText):""}</div>`
           : ``;
 
-        // pages that sit upside-down on the sheet carry the .rot (180deg) class
         o_html+=`<div class="pcell${cl.rot?" rot":""}" style="${S.cell}">`+
           pnumEl+
           runEl+

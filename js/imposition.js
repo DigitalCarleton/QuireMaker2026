@@ -1,6 +1,6 @@
 "use strict";
 
-/* formats & fold simulation  */
+/* formats + fold / imposition */
 export const FORMATS = {
   folio :{name:"Folio",       sym:"2&deg;", C:2,R:1, folds:[["V","LR"]]},
   quarto:{name:"Quarto",      sym:"4&deg;", C:2,R:2, folds:[["H","TB"],["V","LR"]]},
@@ -39,7 +39,7 @@ export function impose(key){
   const f=FORMATS[key], stack=simulate(f.C,f.R,f.folds);
   const mk=()=>Array.from({length:f.R},()=>Array(f.C).fill(null));
   const A=mk(),B=mk();
-  // leafOrder: outermost leaf first (pages 1/2), innermost last — matches a real gathering
+  // outermost leaf first (pages 1/2)
   const leafOrder=stack.map((l,i)=>({
     r:l.r, c:l.c, face:l.face, flip:l.flip,
     leaf:i, p1:2*i+1, p2:2*i+2
