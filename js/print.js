@@ -48,7 +48,7 @@ export function buildPrint(data){
   const gOpts=geomOpts(o);
   const Sr=panelStyles(pt, fam, gOpts, "r");
   const Sv=panelStyles(pt, fam, gOpts, "v");
-  const sheet=src.sheet||readPaperUI();
+  const sheet=src.sheet||readPaperUI(im.C, im.R);
   applyPrintSheetSize(sheet.w, sheet.h);
 
   if(pages.length!==nG*per){

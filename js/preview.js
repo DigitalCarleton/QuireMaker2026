@@ -160,7 +160,7 @@ export function compose(){
   const raw=$("txt").value;
   const per=im.leaves*2;
   const o=panelOpts();
-  const sheet=readPaperUI();
+  const sheet=readPaperUI(im.C, im.R);
   setPanelSize(sheet.w/im.C, sheet.h/im.R);
   const pages=splitPages(raw,$("para").checked,per,pt,fam,geomOpts(o));
 

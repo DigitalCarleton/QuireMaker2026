@@ -17,7 +17,10 @@ export function wordsOf(text){
 }
 export function wordsFromHtml(html){
   if(!html||!String(html).trim()) return [];
-  const d=document.createElement('div'); d.innerHTML=html;
+  // tags become spaces first: textContent would otherwise run the last word of
+  // one paragraph into the first word of the next
+  const d=document.createElement('div');
+  d.innerHTML=String(html).replace(/<[^>]*>/g,' ');
   return wordsOf(d.textContent||'');
 }
 export function verifyWordIntegrity(raw,pageHtmls){

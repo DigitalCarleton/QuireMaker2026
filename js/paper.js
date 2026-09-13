@@ -85,27 +85,34 @@ export function findPaper(id){
   return PAPER_SIZES.find(p=>p.id===id) || PAPER_SIZES.find(p=>p.id==="A4");
 }
 
-/* landscape sheet for printing (long edge horizontal) */
-export function getSheetMm(paperId, customWunit, customHunit, unit){
+/* Turn the sheet whichever way makes the folded pages portrait. A 2x1 or 4x2
+   grid wants the long edge across; a square grid wants it upright. */
+function orientForGrid(w, h, C, R){
+  const long=Math.max(w,h), short=Math.min(w,h);
+  if(!(C>0 && R>0)) return {w:long, h:short};
+  return (long/C <= short/R) ? {w:long, h:short} : {w:short, h:long};
+}
+
+export function getSheetMm(paperId, customWunit, customHunit, unit, C, R){
   if(paperId==="CUSTOM"){
     let w=unitToMm(customWunit, unit);
     let h=unitToMm(customHunit, unit);
     if(!(w>10)) w=210;
     if(!(h>10)) h=297;
-    return {w, h};
+    return {w, h}; // custom is used exactly as typed
   }
   const p=findPaper(paperId);
-  return {w:Math.max(p.w,p.h), h:Math.min(p.w,p.h)};
+  return orientForGrid(p.w, p.h, C, R);
 }
 
 const $=i=>document.getElementById(i);
 
-export function readPaperUI(){
+export function readPaperUI(C, R){
   const paperId = $("paper") ? $("paper").value : "A4";
   const unit = $("paperUnit") ? $("paperUnit").value : "cm";
   const customW = $("paperW") ? $("paperW").value : "";
   const customH = $("paperH") ? $("paperH").value : "";
-  return {paperId, unit, customW, customH, ...getSheetMm(paperId, customW, customH, unit)};
+  return {paperId, unit, customW, customH, ...getSheetMm(paperId, customW, customH, unit, C, R)};
 }
 
 export function fillPaperSelect(){
