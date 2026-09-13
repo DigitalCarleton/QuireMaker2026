@@ -45,7 +45,7 @@ People on other networks will not reach your laptop this way. For a link everyon
 6. **Add text.** Type or paste into the text box. Large amounts of text will automatically spread onto as many gatherings as needed.
 7. **Impose & preview.** Press the gold button to watch the sheet fold into whatever kind of quire you selected, then scroll to Finished pages to read them in order.
 8. **Explore the formes.** Click any page to spotlight where it sits on both sides of the sheet. Numbers flagged 180° are printed upside down - that is normal, as they will come right side up once folded correctly.
-9. **Print.** Hit Print, choose duplex, and flip on the long edge. Fold along the creases, and nest the sheets to make a bifolium, ternion, quaternion, or other kind of quire.
+9. **Print.** Hit Print, choose duplex, and flip on the long edge. Fold along the creases, and nest the sheets to make a bifolium, ternion, quaternion, or other kind of quire
 
 There is also a short User Guide on the site if you want a walkthrough with tips.
 
