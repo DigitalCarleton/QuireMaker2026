@@ -1,6 +1,6 @@
 "use strict";
 
-import { FORMATS } from "./imposition.js";
+import { FORMATS, FOLD_TEXT } from "./imposition.js";
 import { PW, PH, setPanelSize, splitPages, verifyWordIntegrity, panelStyles, wordsFromHtml } from "./pagination.js";
 import { readPaperUI } from "./paper.js";
 
@@ -75,29 +75,25 @@ export function buildScene(){
 export function layout(){
   const im=T.im, folds=im.folds.slice(0,T.step);
   const stepW=LW+GAP, stepH=LH+GAP;
-  const fullyFolded = T.step===im.folds.length;
-  const leafByCell = Object.create(null);
-  if(im.leafOrder){
-    for(const L of im.leafOrder) leafByCell[L.r+","+L.c] = L;
-  }
+  const pile=im.stacks[T.step]; // real layer order after this many creases
 
   document.querySelectorAll(".pc").forEach(el=>{
     const r0=+el.dataset.r, c0=+el.dataset.c;
     let w=im.C, h=im.R, ox=0, oy=0;
-    let ry=0, rx=0, depth=0;
+    let ry=0, rx=0;
     let landCol=c0, landRow=r0;
 
     for(const [ax,dir] of folds){
       if(ax==="V"){
         const nw=w/2, loc=landCol-ox;
         const moving = dir==="LR" ? loc<nw : loc>=nw;
-        if(moving){ landCol = ox + (w-1-loc); ry+=180; depth++; }
+        if(moving){ landCol = ox + (w-1-loc); ry+=180; }
         if(dir==="LR") ox+=nw;
         w=nw;
       }else{
         const nh=h/2, loc=landRow-oy;
         const moving = dir==="TB" ? loc<nh : loc>=nh;
-        if(moving){ landRow = oy + (h-1-loc); rx+=180; depth++; }
+        if(moving){ landRow = oy + (h-1-loc); rx+=180; }
         if(dir==="TB") oy+=nh;
         h=nh;
       }
@@ -111,35 +107,21 @@ export function layout(){
     el.style.marginLeft = (-LW/2)+"px";
     el.style.marginTop  = (-LH/2)+"px";
 
-    // when fully folded, stack leaves so page 1 faces out
-    if(fullyFolded && leafByCell[r0+","+c0]){
-      const L = leafByCell[r0+","+c0];
-      const z = 20 + (im.leaves - L.leaf);
-      const oddOnBack = L.face === "back";
-      let fry = ry, frx = rx;
-      if(L.leaf === 0){
-        fry = oddOnBack ? 180 : 0;
-        frx = 0;
-      }else if(L.leaf === im.leaves - 1){
-        fry = oddOnBack ? 180 : 0;
-        frx = 0;
-      }
-      el.style.transform =
-        `translate3d(${x}px,${y}px,${(im.leaves-L.leaf)*2.6}px) rotateY(${fry}deg) rotateX(${frx}deg)`;
-      el.style.zIndex = z;
-    }else{
-      el.style.transform =
-        `translate3d(${x}px,${y}px,${depth*2.6}px) rotateY(${ry}deg) rotateX(${rx}deg)`;
-      el.style.zIndex = 10+depth;
-    }
+    // depth 0 is the top of the pile, so lift it closest to the viewer
+    const lift = pile.layers - pile.depth[r0+","+c0];
+    el.style.transform =
+      `translate3d(${x}px,${y}px,${lift*2.6}px) rotateY(${ry}deg) rotateX(${rx}deg)`;
+    el.style.zIndex = 10+lift;
   });
 
-  const n=im.folds.length, nm={V:"vertical fold",H:"horizontal fold"};
+  const n=im.folds.length;
+  const crease = k => FOLD_TEXT[im.folds[k].join(":")];
+  const upSide = im.outer===im.sideA ? "outer" : "inner";
   $("stepTxt").textContent = T.step===0
-    ? `flat sheet \u00b7 ${n} fold${n>1?"s":""} to go`
+    ? `flat sheet \u00b7 ${upSide} forme facing you \u00b7 ${n} fold${n>1?"s":""} to go`
     : T.step===n
-      ? `folded \u00b7 outside front is page 1 \u00b7 Turn over for page ${im.leaves*2}`
-      : `fold ${T.step} of ${n} \u00b7 ${nm[im.folds[T.step-1][0]]}`;
+      ? `fold ${n} of ${n} \u00b7 ${crease(n-1)} \u00b7 page 1 is now on top`
+      : `fold ${T.step} of ${n} \u00b7 ${crease(T.step-1)}`;
   $("back").disabled=T.step===0;
   $("fwd").disabled=T.step===n;
 }
